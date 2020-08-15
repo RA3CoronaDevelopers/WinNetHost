@@ -30,10 +30,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-[Bb]uild/CoronaLauncher.exe
-[Bb]uild/CoronaLauncher.exe.pdb
-[Bb]uild/*.dll
-[Bb]uild/*.xml
+[Bb]uild/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
