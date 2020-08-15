@@ -34,6 +34,9 @@ bld/
 [Bb]uild/CoronaLauncher.exe.config
 [Bb]uild/CoronaLauncher.exe.pdb
 [Bb]uild/Panuon.UI.Silver.dll
+[Bb]uild/Lyi.dll
+[Bb]uild/CrazyEditor.dll
+[Bb]uild/EasyHook32.dll
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
