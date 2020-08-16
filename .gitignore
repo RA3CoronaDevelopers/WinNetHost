@@ -30,7 +30,15 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-[Bb]uild/
+
+#build folder
+
+[Bb]uild/*.xml
+![Bb]uild/CoronaLauncher.VisualElementsManifest.xml
+[Bb]uild/*.dll
+![Bb]uild/Lyi.dll
+![Bb]uild/CrazyEditor.dll
+[Bb]uild/CoronaLauncher.exe
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
