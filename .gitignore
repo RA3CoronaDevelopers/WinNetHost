@@ -32,7 +32,7 @@ bld/
 [Ll]ogs/
 
 #build folder
-
+[Bb]uild/net472/
 [Bb]uild/*.xml
 ![Bb]uild/CoronaLauncher.VisualElementsManifest.xml
 [Bb]uild/*.dll
