@@ -32,14 +32,18 @@ bld/
 [Ll]ogs/
 
 #build folder
-
+[Bb]uild/net472/
 [Bb]uild/*.xml
 ![Bb]uild/CoronaLauncher.VisualElementsManifest.xml
 [Bb]uild/*.dll
 ![Bb]uild/Lyi.dll
 ![Bb]uild/CrazyEditor.dll
+![Bb]uild/EasyHook32.dll
+![Bb]uild/zstd.dll
 [Bb]uild/CoronaLauncher.exe
 ![Bb]uild/CoronaLauncher.exe.config
+
+
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
