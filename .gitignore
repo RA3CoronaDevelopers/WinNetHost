@@ -33,6 +33,7 @@ bld/
 
 #build folder
 [Bb]uild/net472/
+[Bb]uild/net5.0-windows/
 [Bb]uild/*.xml
 ![Bb]uild/CoronaLauncher.VisualElementsManifest.xml
 [Bb]uild/*.dll
@@ -363,3 +364,4 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
+/source/CoronaLauncher/Properties/launchSettings.json
