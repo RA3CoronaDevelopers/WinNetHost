@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "NativeHost": {
+      "commandName": "Executable",
+      "executablePath": "$(SolutionDir)\\..\\build\\net6.0-windows\\nativehost.exe",
+      "nativeDebugging": true
+    }
+  }
+}
