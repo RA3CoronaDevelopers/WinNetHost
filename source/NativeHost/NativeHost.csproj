@@ -28,6 +28,7 @@
 		<NativePlatform>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)</NativePlatform>
 		<NativeObjDir>$(MSBuildThisFileDirectory)obj/$(Configuration)/$(NativePlatform)/</NativeObjDir>
 		<NativeHostDirectory>$(MSBuildThisFileDirectory)</NativeHostDirectory>
+		<PlatformTarget>x86</PlatformTarget>
 	</PropertyGroup>
 
 	<!-- Properties for MSVCFindCompilerPaths -->
@@ -43,20 +44,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CompilerPaths"
-						  Version="[1.0.2, )"
-						  Condition="$([MSBuild]::IsOsPlatform('Windows'))" />
+		<PackageReference Include="CompilerPaths" Version="[1.0.2, )" Condition="$([MSBuild]::IsOsPlatform('Windows'))" />
 	</ItemGroup>
 
 	<!-- Targets to build the native project. The output goes directly to the bin directory -->
 	<Target Name="PrepareForNativeBuild">
 		<PropertyGroup>
-			<NativeOutputExtension Condition="$([MSBuild]::IsOsPlatform('Linux'))"></NativeOutputExtension>
-			<NativeOutputExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))"></NativeOutputExtension>
 			<NativeOutputExtension Condition="$([MSBuild]::IsOsPlatform('Windows'))">.exe</NativeOutputExtension>
 			<NativeOutputFilePath>$(NativeBinDir)/$(NativeOutputName)$(NativeOutputExtension)</NativeOutputFilePath>
 
-			<SourceFiles>@(NativeSource-> '&quot;%(RootDir)%(Directory)%(Filename)%(Extension)&quot;', ' ')</SourceFiles>
+			<SourceFiles>@(NativeSource-> '"%(RootDir)%(Directory)%(Filename)%(Extension)"', ' ')</SourceFiles>
 
 			<NetHostDir>$(NetCoreTargetingPackRoot)/Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)/$(BundledNETCoreAppPackageVersion)/runtimes/$(NETCoreSdkRuntimeIdentifier)/native</NetHostDir>
 
@@ -69,51 +66,18 @@
 		<MakeDir Directories="$(NativeObjDir)" />
 	</Target>
 
-	<Target Name="BuildNativeProjectUnix"
-			AfterTargets="Build"
-			DependsOnTargets="PrepareForNativeBuild"
-			Condition="$([MSBuild]::IsOsPlatform('Linux')) OR $([MSBuild]::IsOsPlatform('OSX'))">
+	<Target Name="BuildNativeProjectWindows" AfterTargets="Build" DependsOnTargets="PrepareForNativeBuild;MSVCFindCompilerPaths" Condition="$([MSBuild]::IsOsPlatform('Windows'))">
 		<PropertyGroup>
-			<IncPaths>-I$(NativeHostDirectory)inc -I&quot;$(NetHostDir)&quot;</IncPaths>
-			<CompilerArgs>-g</CompilerArgs>
-		</PropertyGroup>
-		<PropertyGroup Condition="$([MSBuild]::IsOsPlatform('Linux'))">
-			<PreprocessorDefines>-D LINUX</PreprocessorDefines>
-			<LinkArgs>-ldl -lnethost -lpthread -L&quot;$(NetHostDir)&quot; -Wl,-rpath,'$ORIGIN',--disable-new-dtags</LinkArgs>
-		</PropertyGroup>
-		<PropertyGroup Condition="$([MSBuild]::IsOsPlatform('OSX'))">
-			<PreprocessorDefines>-D OSX</PreprocessorDefines>
-			<LinkArgs>-ldl -lnethost -lpthread -L&quot;$(NetHostDir)&quot; -Wl,-rpath,'@loader_path'</LinkArgs>
-		</PropertyGroup>
-
-		<Exec Command="g++ $(SourceFiles) $(IncPaths) $(PreprocessorDefines) -std=c++11 -o &quot;$(NativeOutputFilePath)&quot; $(CompilerArgs) $(LinkArgs)"
-			  WorkingDirectory="$(NativeObjDir)"
-			  ConsoleToMsBuild="true" />
-
-		<Copy SourceFiles="$(NetHostDir)/$(NetHostName)"
-			  DestinationFolder="$(NativeBinDir)"
-			  SkipUnchangedFiles="True" />
-	</Target>
-
-	<Target Name="BuildNativeProjectWindows"
-			AfterTargets="Build"
-			DependsOnTargets="PrepareForNativeBuild;MSVCFindCompilerPaths"
-			Condition="$([MSBuild]::IsOsPlatform('Windows'))">
-		<PropertyGroup>
-			<IncPaths>@(MSVCIncludePaths-> '/I &quot;%(RootDir)%(Directory)%(Filename)&quot;', ' ')</IncPaths>
-			<IncPaths>$(IncPaths) /I inc /I &quot;$(NetHostDir)&quot;</IncPaths>
+			<IncPaths>@(MSVCIncludePaths-> '/I "%(RootDir)%(Directory)%(Filename)"', ' ')</IncPaths>
+			<IncPaths>$(IncPaths) /I inc /I "$(NetHostDir)"</IncPaths>
 			<CompilerArgs>/EHsc /Od /GS /sdl /Zi</CompilerArgs>
 			<PreprocessorDefines>/D WINDOWS</PreprocessorDefines>
-			<LibPaths>@(MSVCLibPaths-> '/LIBPATH:&quot;%(RootDir)%(Directory)%(Filename)&quot;', ' ')</LibPaths>
-			<LibPaths>$(LibPaths) &quot;$(NetHostDir)\nethost.lib&quot;</LibPaths>
+			<LibPaths>@(MSVCLibPaths-> '/LIBPATH:"%(RootDir)%(Directory)%(Filename)"', ' ')</LibPaths>
+			<LibPaths>$(LibPaths) "$(NetHostDir)\nethost.lib"</LibPaths>
 		</PropertyGroup>
 
-		<Exec Command="&quot;$(MSVCCompilerPath)&quot; $(SourceFiles) $(IncPaths) $(PreprocessorDefines) $(CompilerArgs) /link $(LibPaths) /out:&quot;$(NativeOutputFilePath)&quot;"
-			  WorkingDirectory="$(NativeObjDir)"
-			  ConsoleToMsBuild="true" />
+		<Exec Command="&quot;$(MSVCCompilerPath)&quot; $(SourceFiles) $(IncPaths) $(PreprocessorDefines) $(CompilerArgs) /link $(LibPaths) /out:&quot;$(NativeOutputFilePath)&quot;" WorkingDirectory="$(NativeObjDir)" ConsoleToMsBuild="true" />
 
-		<Copy SourceFiles="$(NetHostDir)/$(NetHostName)"
-			  DestinationFolder="$(NativeBinDir)"
-			  SkipUnchangedFiles="True" />
+		<Copy SourceFiles="$(NetHostDir)/$(NetHostName)" DestinationFolder="$(NativeBinDir)" SkipUnchangedFiles="True" />
 	</Target>
 </Project>
