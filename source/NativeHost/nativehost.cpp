@@ -75,6 +75,9 @@ int __cdecl wmain(int argc, wchar_t *argv[])
     const char_t *dotnet_type_method = STR("Main");
     // Function pointer to managed delegate
     component_entry_point_fn hello = nullptr;
+
+    std::cout << dotnetlib_path.c_str() << std::endl;
+
     int rc = load_assembly_and_get_function_pointer(
         dotnetlib_path.c_str(),
         dotnet_type,
@@ -82,6 +85,9 @@ int __cdecl wmain(int argc, wchar_t *argv[])
         nullptr /*delegate_type_name*/,
         nullptr,
         (void**)&hello);
+    Sleep(5000);
+    printf(">> %d\n", rc);
+    std::cout << ">> " << (hello == nullptr) << std::endl;
     assert(rc == 0 && hello != nullptr && "Failure: load_assembly_and_get_function_pointer()");
 
     //
