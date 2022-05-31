@@ -9,8 +9,9 @@
 #include <string.h>
 #include <assert.h>
 #include <iostream>
+#include <filesystem>
 
-// Provided by the AppHost NuGet package and installed as an SDK pack
+// Installed from vcpkg
 #include <nethost.h>
 
 // Header files copied from https://github.com/dotnet/core-setup
@@ -34,7 +35,20 @@ namespace
 
     // Forward declarations
     bool load_hostfxr();
-    load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t *assembly);
+    load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
+
+    // Ask path
+    std::filesystem::path ask_path(std::string_view text, std::filesystem::path path = {})
+    {
+        while (not is_regular_file(path))
+        {
+            std::cout << text << "?" << std::endl;
+            auto input = std::string{};
+            std::getline(std::cin, input);
+            path = input;
+        }
+        return path;
+    }
 }
 
 int __cdecl wmain(int argc, wchar_t *argv[])
@@ -62,7 +76,7 @@ int __cdecl wmain(int argc, wchar_t *argv[])
     //
     // STEP 2: Initialize and start the .NET Core runtime
     //
-    const string_t config_path = root_path + STR("CoronaLauncher.runtimeconfig.json");
+    const auto config_path = ask_path("runtimeconfig.json", root_path + STR("CoronaLauncher.runtimeconfig.json"));
     load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
     load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
     assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
@@ -70,14 +84,14 @@ int __cdecl wmain(int argc, wchar_t *argv[])
     //
     // STEP 3: Load managed assembly and get function pointer to a managed method
     //
-    const string_t dotnetlib_path = root_path + STR("CoronaLauncher.dll");
-    const char_t *dotnet_type = STR("CoronaLauncher.EntryPoint, CoronaLauncher");
-    const char_t *dotnet_type_method = STR("Main");
+    const auto dotnetlib_path = ask_path("dll", root_path + STR("CoronaLauncher.dll"));
+    const char_t* dotnet_type = STR("CoronaLauncher.EntryPoint, CoronaLauncher");
+    const char_t* dotnet_type_method = STR("Main");
     // Function pointer to managed delegate
     component_entry_point_fn hello = nullptr;
 
-    std::cout << dotnetlib_path.c_str() << std::endl;
-
+    std::cout << dotnetlib_path.string() << std::endl;
+    MessageBoxA(0, "", 0, 0);
     int rc = load_assembly_and_get_function_pointer(
         dotnetlib_path.c_str(),
         dotnet_type,
@@ -93,16 +107,7 @@ int __cdecl wmain(int argc, wchar_t *argv[])
     //
     // STEP 4: Run managed code
     //
-    struct lib_args
-    {
-        wchar_t *message[];
-    };
-    lib_args args
-    {
-        *argv
-    };
-
-    hello(&args, sizeof(args));
+    hello(nullptr, 0);
 
     return EXIT_SUCCESS;
 }
