@@ -3,6 +3,7 @@
   "name": "corona-launcher-native-host",
   "version": "0.0.1",
   "dependencies": [
-    "nethost"
+    "nethost",
+    "wil"
   ]
 }

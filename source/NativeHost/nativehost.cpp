@@ -1,182 +1,117 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-// Standard headers
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <iostream>
-#include <filesystem>
-
-// Installed from vcpkg
-#include <nethost.h>
-
-// Header files copied from https://github.com/dotnet/core-setup
-#include <coreclr_delegates.h>
-#include <hostfxr.h>
-
+// 系统库
 #include <Windows.h>
-
-#define STR(s) L ## s
-#define CH(c) L ## c
-#define DIR_SEPARATOR L'\\'
-
-using string_t = std::basic_string<char_t>;
-
-namespace
-{
-    // Globals to hold hostfxr exports
-    hostfxr_initialize_for_runtime_config_fn init_fptr;
-    hostfxr_get_runtime_delegate_fn get_delegate_fptr;
-    hostfxr_close_fn close_fptr;
-
-    // Forward declarations
-    bool load_hostfxr();
-    load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
-
-    // Ask path
-    std::filesystem::path ask_path(std::string_view text, std::filesystem::path path = {})
-    {
-        while (not is_regular_file(path))
-        {
-            std::cout << text << "?" << std::endl;
-            auto input = std::string{};
-            std::getline(std::cin, input);
-            path = input;
-        }
-        return path;
-    }
-}
-
-int __cdecl wmain(int argc, wchar_t *argv[])
-{
-    // Get the current executable's directory
-    // This sample assumes the managed assembly to load and its runtime configuration file are next to the host
-    char_t host_path[MAX_PATH];
-    auto size = ::GetFullPathNameW(argv[0], sizeof(host_path) / sizeof(char_t), host_path, nullptr);
-    assert(size != 0);
-
-    string_t root_path = host_path;
-    auto pos = root_path.find_last_of(DIR_SEPARATOR);
-    assert(pos != string_t::npos);
-    root_path = root_path.substr(0, pos + 1);
-
-    //
-    // STEP 1: Load HostFxr and get exported hosting functions
-    //
-    if (!load_hostfxr())
-    {
-        assert(false && "Failure: load_hostfxr()");
-        return EXIT_FAILURE;
-    }
-
-    //
-    // STEP 2: Initialize and start the .NET Core runtime
-    //
-    const auto config_path = ask_path("runtimeconfig.json", root_path + STR("CoronaLauncher.runtimeconfig.json"));
-    load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
-    load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
-    assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
-
-    //
-    // STEP 3: Load managed assembly and get function pointer to a managed method
-    //
-    const auto dotnetlib_path = ask_path("dll", root_path + STR("CoronaLauncher.dll"));
-    const char_t* dotnet_type = STR("CoronaLauncher.EntryPoint, CoronaLauncher");
-    const char_t* dotnet_type_method = STR("Main");
-    // Function pointer to managed delegate
-    component_entry_point_fn hello = nullptr;
-
-    std::cout << dotnetlib_path.string() << std::endl;
-    MessageBoxA(0, "", 0, 0);
-    int rc = load_assembly_and_get_function_pointer(
-        dotnetlib_path.c_str(),
-        dotnet_type,
-        dotnet_type_method,
-        nullptr /*delegate_type_name*/,
-        nullptr,
-        (void**)&hello);
-    Sleep(5000);
-    printf(">> %d\n", rc);
-    std::cout << ">> " << (hello == nullptr) << std::endl;
-    assert(rc == 0 && hello != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-
-    //
-    // STEP 4: Run managed code
-    //
-    hello(nullptr, 0);
-
-    return EXIT_SUCCESS;
-}
-
-/********************************************************************************************
- * Function used to load and activate .NET Core
- ********************************************************************************************/
+#include <ShellApi.h>
+// vcpkg
+#include <wil/resource.h>
+// 标准库
+#include <cwchar>
+#include <filesystem>
+#include <format>
+#include <span>
+#include <string_view>
+// 模块
+import hostfxr;
+import error_handling;
 
 namespace
 {
-    // Forward declarations
-    void *load_library(const char_t *);
-    void *get_export(void *, const char *);
+    // 把窄字符串（8 字节字符串，例如 GB18030 或者 UTF-8）转换为 UTF-16
+    // 使用当前环境的默认编码作为窄字符串的编码
+    std::wstring narrow_to_utf16(char const* source);
+}
 
-    void *load_library(const char_t *path)
+// Windows 的 Main 函数
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
+{
+    // 调用 error_handling.ixx 里的 initialize_error_handling
+    // 初始化错误处理，然后用 execute_protected 执行代码
+    // 这样程序崩溃的时候至少能看到个弹窗（
+    initialize_error_handling();
+    return execute_protected([]
     {
-        HMODULE h = ::LoadLibraryW(path);
-        assert(h != nullptr);
-        return (void*)h;
-    }
-    void *get_export(void *h, const char *name)
-    {
-        void *f = ::GetProcAddress((HMODULE)h, name);
-        assert(f != nullptr);
-        return f;
-    }
-
-    // Using the nethost library, discover the location of hostfxr and get exports
-    bool load_hostfxr()
-    {
-        // Pre-allocate a large buffer for the path to hostfxr
-        char_t buffer[MAX_PATH];
-        size_t buffer_size = sizeof(buffer) / sizeof(char_t);
-        int rc = get_hostfxr_path(buffer, &buffer_size, nullptr);
-        if (rc != 0)
-            return false;
-
-        // Load hostfxr and get desired exports
-        void *lib = load_library(buffer);
-        init_fptr = (hostfxr_initialize_for_runtime_config_fn)get_export(lib, "hostfxr_initialize_for_runtime_config");
-        get_delegate_fptr = (hostfxr_get_runtime_delegate_fn)get_export(lib, "hostfxr_get_runtime_delegate");
-        close_fptr = (hostfxr_close_fn)get_export(lib, "hostfxr_close");
-
-        return (init_fptr && get_delegate_fptr && close_fptr);
-    }
-
-    // Load and initialize .NET Core and get desired function pointer for scenario
-    load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t *config_path)
-    {
-        // Load .NET Core
-        void *load_assembly_and_get_function_pointer = nullptr;
-        hostfxr_handle cxt = nullptr;
-        int rc = init_fptr(config_path, nullptr, &cxt);
-        if (rc != 0 || cxt == nullptr)
+        // 使用 CommandLineToArgvW 分割命令行参数
+        // CommandLineToArgvW 返回的内存需要调用 LocalFree 释放：
+        // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw#remarks
+        // 而 wil::unique_hlocal_ptr 正好就是一种使用 LocalFree 来管理内存的类型：
+        // https://github.com/Microsoft/wil/wiki/RAII-resource-wrappers#available-unique_any-simple-memory-patterns
+        // 因此我们可以直接使用它
+        auto argc = 0;
+        wil::unique_hlocal_ptr<wchar_t*> argv;
+        argv.reset(CommandLineToArgvW(GetCommandLineW(), &argc));
+        // 通过 hostfxr.ixx 里的 hostfxr_dll 加载 DLL，
+        // 加载成功之后再用 hostfxr_app_context 加载 .NET 应用
+        try
         {
-            std::cerr << "Init failed: " << std::hex << std::showbase << rc << std::endl;
-            close_fptr(cxt);
-            return nullptr;
+            hostfxr_dll::load();
         }
+        catch (std::exception const& e)
+        {
+            // 把 std::exception::what() 从 char* 转换成 UTF-16 的宽字符串
+            auto reason = narrow_to_utf16(e.what());
+            // 错误信息
+            auto message = std::format(L"HostFxr.dll 加载失败，可能是因为日冕客户端忘了安装 .NET 运行库\n{}", reason);
+            // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
+            show_error_message_box(message.c_str());
+            return 1;
+        }
+        try
+        {
+            // 这里的 std::span 和 C# 的 Span 差不多是一回事
+            // 总之，这里用 span 传递参数、启动 .NET 应用
+            std::span arguments{ argv.get(), static_cast<std::size_t>(argc) };
+            // TODO: 这里的写 CoronaLauncher.dll 是相对于【当前路径】的
+            // 但是当前路径其实不一定就是本 EXE 所处的路径
+            // 假如要更加可靠的话，可以这样：
+            // #include <wil/stl.h>
+            // #include <wil/win32_helpers.h>
+            // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew
+            // https://github.com/microsoft/wil/wiki/Win32-helpers#predefined-adapters-for-functions-that-return-variable-length-strings
+            // auto this_exe = wil::QueryFullProcessImageNameW<std::wstring>();
+            // std::filesystem::path result{ this_exe };
+            // result.replace_filename("bin/CoronaLauncher.dll")
+            // 然后把 result 作为参数传到 hostfxr_app_context::load() 里面
+            hostfxr_app_context::load(arguments, "CoronaLauncher.dll");
+        }
+        catch (std::exception const& e)
+        {
+            // 把 std::exception::what() 从 char* 转换成 UTF-16 的宽字符串
+            auto reason = narrow_to_utf16(e.what());
+            // 错误信息
+            auto message = std::format(L"CoronaLauncher.dll 加载失败，可能是因为日冕客户端的安装有问题\n{}", reason);
+            // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
+            show_error_message_box(message.c_str());
+            return 1;
+        }
+        // 运行 .NET 应用
+        // 其实，hostfxr_app_context::load() 也会返回自身的引用
+        // 也就是其实可以这样：
+        // hostfxr_app_context::load(...).run();
+        // 不过，分开来的话，可以写更加细分的 try / catch
+        // 也更加容易处理可能出现的报错（
+        return hostfxr_app_context::get().run();
+    });
+}
 
-        // Get the load assembly function pointer
-        rc = get_delegate_fptr(
-            cxt,
-            hdt_load_assembly_and_get_function_pointer,
-            &load_assembly_and_get_function_pointer);
-        if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
-            std::cerr << "Get delegate failed: " << std::hex << std::showbase << rc << std::endl;
-
-        close_fptr(cxt);
-        return (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
+namespace
+{
+    // 把窄字符串（8 字节字符串，例如 GB18030 或者 UTF-8）转换为 UTF-16
+    // 使用当前环境的默认编码作为窄字符串的编码
+    std::wstring narrow_to_utf16(char const* source)
+    {
+        std::wstring result;
+        // 使用 std::mbsrtowcs 进行编码转换：
+        // https://en.cppreference.com/w/cpp/string/multibyte/mbsrtowcs
+        std::mbstate_t state{};
+        // 第一次调用，先不执行真正的转换，而是传入 null，
+        // 让 std::mbsrtowcs 计算需要的字符串长度
+        auto length = std::mbsrtowcs(nullptr, &source, 0, &state);
+        if (length == static_cast<std::size_t>(-1))
+        {
+            return L"<narrow_to_utf16() failed>";
+        }
+        result.resize(length);
+        // 进行真正的转换
+        std::mbsrtowcs(result.data(), &source, result.size(), &state);
+        return result;
     }
 }

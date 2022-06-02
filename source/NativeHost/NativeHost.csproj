@@ -1,31 +1,36 @@
 ﻿<Project>
   <!-- 我们不在 <Project /> 里面直接指定 SDK。
        假如那样的话，相当于在一开始导入默认的 Props、在最后导入默认的 Targets。
-	   在最后导入 Targets 会导致我们的 <Target Name="Build" />
-	   被之后默认的 Build Target 覆盖。
-	   所以我们显式在合适的位置自己导入 Props 以及 Targets。-->
+       在最后导入 Targets 会导致我们的 <Target Name="Build" />
+       被之后默认的 Build Target 覆盖。
+       所以我们显式在合适的位置自己导入 Props 以及 Targets。-->
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
     <TargetFramework>net6.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+    <TargetExt>.exe</TargetExt>
   </PropertyGroup>
-  <!-- 假如 CMakeLists 被修改过，就重新设置 -->
-  <Target Name="CMakeConfigure" Inputs="CMakeLists.txt" Outputs="$(TargetDir)$(TargetName).exe">
+  <!-- 假如 CMakeLists.txt 比生成的 exe 要新（被修改过），就重新设置 -->
+  <Target Name="CMakeConfigure" Inputs="CMakeLists.txt" Outputs="$(TargetPath)">
     <!-- 根据环境变量检测 Vcpkg 的路径 -->
-    <Error Condition="'$(VCPKG_ROOT)' == ''" Text="VCPKG_ROOT environment variable must be set!" />
+    <Error Condition="'$(VCPKG_ROOT)' == ''" Text="VCPKG_ROOT 环境变量没有被设置。请把它设为 Vcpkg 的完整路径，然后重新打开 Visual Studio" />
     <!-- 根据 Vcpkg 的路径，找到它的 CMake Toolchain 文件 -->
     <PropertyGroup>
       <VcpkgCMakeToolchainFile>$([MSBuild]::NormalizePath($(VCPKG_ROOT), "scripts/buildsystems/vcpkg.cmake"))</VcpkgCMakeToolchainFile>
     </PropertyGroup>
+    <!-- 创建供 CMake 使用的文件夹 -->
+    <MakeDir Directories="$(TargetDir)CMake" />
     <!-- 让 CMake 设置 32 位的 Windows 项目，把 Vcpkg 的 Toolchain 文件也传过去 -->
-    <Exec Command="cd /D &quot;$(TargetDir)&quot; &amp;&amp; echo cmake &quot;-DNATIVE_HOST_EXE=$(TargetDir)$(TargetName).exe&quot; -DCMAKE_BUILD_TYPE=$(Configuration) -DCMAKE_GENERATOR_PLATFORM=Win32 &quot;-DCMAKE_TOOLCHAIN_FILE=$(VcpkgCMakeToolchainFile)&quot; &quot;$(ProjectDir)&quot;" />
-    <Exec Command="cd /D &quot;$(TargetDir)&quot; &amp;&amp; cmake &quot;-DNATIVE_HOST_EXE=$(TargetDir)$(TargetName).exe&quot; -DCMAKE_BUILD_TYPE=$(Configuration) -DCMAKE_GENERATOR_PLATFORM=Win32 &quot;-DCMAKE_TOOLCHAIN_FILE=$(VcpkgCMakeToolchainFile)&quot; &quot;$(ProjectDir)&quot;" />
+    <Exec Command="cd /D &quot;$(TargetDir)CMake&quot; &amp;&amp; echo cmake -DCMAKE_BUILD_TYPE=$(Configuration) -DCMAKE_GENERATOR_PLATFORM=Win32 &quot;-DCMAKE_TOOLCHAIN_FILE=$(VcpkgCMakeToolchainFile)&quot; &quot;$(ProjectDir)&quot;" />
+    <Exec Command="cd /D &quot;$(TargetDir)CMake&quot; &amp;&amp; cmake -DCMAKE_BUILD_TYPE=$(Configuration) -DCMAKE_GENERATOR_PLATFORM=Win32 &quot;-DCMAKE_TOOLCHAIN_FILE=$(VcpkgCMakeToolchainFile)&quot; &quot;$(ProjectDir)&quot;" />
   </Target>
   <!-- 在定义 Build Target 之前，导入默认的 Targets。-->
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="Build" DependsOnTargets="CMakeConfigure">
     <!-- 让 CMake 开始编译 -->
-    <Exec Command="cd /D &quot;$(TargetDir)&quot; &amp;&amp; cmake --build . --config $(Configuration)" />
+    <Exec Command="cd /D &quot;$(TargetDir)CMake&quot; &amp;&amp; cmake --build . --config $(Configuration)" />
+    <!-- 让 CMake 把文件复制到输出目录 -->
+    <Exec Command="cd /D &quot;$(TargetDir)CMake&quot; &amp;&amp; cmake --install . --prefix $(TargetDir) --config $(Configuration)" />
   </Target>
 </Project>
