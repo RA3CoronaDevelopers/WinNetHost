@@ -375,7 +375,15 @@ int hostfxr_app_context::run()
     // 之后检查函数指针是不是已经被设为 null 了
     // 同样使用 wil 的 FAIL_FAST_IF_NULL_MSG 宏来进行断言
     FAIL_FAST_IF_NULL_MSG(run_app, "run_app is null, .NET application might have already runned");
-    return run_app(m_handle.get());
+    // 运行 .NET 应用，并在 .NET 应用结束之后，返回它的 Main() 函数的返回值
+    // 假如 .NET 应用没有被成功加载，则返回负数作为错误码
+    // 对于日冕客户端来说，它的 Main() 只会返回 0（正常）或者 1（错误），
+    // 不会返回负数。所以，负数的错误码，和正数的返回值，是可以区分开来的。
+    // 因此我们也可以在这里使用 HOSTFXR_THROW_IF_FAILED 来检查返回值，
+    // 而不用担心日冕客户端的 Main() 函数返回奇怪的值扰乱了判断。
+    int app_return_value = run_app(m_handle.get());
+    HOSTFXR_THROW_IF_FAILED(app_return_value, "hostfxr_run_app failed");
+    return app_return_value;
 }
 
 // 获取 .NET 应用上下文的句柄
