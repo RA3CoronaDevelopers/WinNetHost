@@ -1,15 +1,18 @@
 ﻿<Project>
-  <!-- 我们不在 <Project /> 里面直接指定 SDK。
-       假如那样的话，相当于在一开始导入默认的 Props、在最后导入默认的 Targets。
-       在最后导入 Targets 会导致我们的 <Target Name="Build" />
-       被之后默认的 Build Target 覆盖。
-       所以我们显式在合适的位置自己导入 Props 以及 Targets。-->
+  <!-- 我们不在 <Project /> 里面直接指定 SDK。假如那样的话，
+       相当于在文件一开始自动导入默认的 Props、在最后导入默认的 Targets：
+       https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview#project-files
+       假如让 csproj 在文件尾部自动导入默认的 Targets，
+       会导致我们的自定义的 <Target Name="Build" /> 被默认的 Build Target 覆盖。
+       所以我们显式在合适的位置自己导入 Microsoft.NET.Sdk 的
+       Sdk.props 以及 Sdk.targets。-->
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
-    <TargetFramework>net6.0</TargetFramework>
-    <OutputType>Exe</OutputType>
     <TargetExt>.exe</TargetExt>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <OutputPath>$(SolutionDir)..\build\</OutputPath>
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
   <!-- 假如 CMakeLists.txt 比生成的 exe 要新（被修改过），就重新设置 -->
   <Target Name="CMakeConfigure" Inputs="CMakeLists.txt" Outputs="$(TargetPath)">
