@@ -13,6 +13,7 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <OutputPath>$(SolutionDir)..\build\</OutputPath>
     <OutputType>WinExe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <!-- 假如 CMakeLists.txt 比生成的 exe 要新（被修改过），就重新设置 -->
   <Target Name="CMakeConfigure" Inputs="CMakeLists.txt" Outputs="$(TargetPath)">

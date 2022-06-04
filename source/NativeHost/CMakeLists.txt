@@ -22,6 +22,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::nethost::nethost WIL::WIL)
 # 源码
 target_sources(${PROJECT_NAME} PRIVATE main.cpp hostfxr.ixx error_handling.ixx)
+# 应用清单
+target_sources(${PROJECT_NAME} PRIVATE app.manifest)
 
 # 在执行 CMake install 步骤的时候，把产生的 exe 复制到定义的地方
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ".")
