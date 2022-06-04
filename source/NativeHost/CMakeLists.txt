@@ -4,9 +4,8 @@ set(VCPKG_TARGET_TRIPLET "x86-windows-static")
 # 声明我们的项目
 project(NativeHost)
 
-# 找到 NET Host 的依赖
+# 找到 NET Host 以及WIL（一个方便调用 Win32 API 的库）的库
 find_package(unofficial-nethost CONFIG REQUIRED)
-# 找到 WIL（一个方便调用 Win32 API 的库）的依赖
 find_package(wil CONFIG REQUIRED)
 
 # 创建一个编译到 exe 的目标
@@ -23,5 +22,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::nethost::nethost WIL::WIL)
 # 源码
 target_sources(${PROJECT_NAME} PRIVATE main.cpp hostfxr.ixx error_handling.ixx)
-# 把产生的 exe 复制到定义的地方
+
+# 在执行 CMake install 步骤的时候，把产生的 exe 复制到定义的地方
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ".")
