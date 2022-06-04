@@ -4,7 +4,6 @@
 // Copyright © Dynesshely 2022-present
 // All Rights Reserved.
 
-#include <bits/stdc++.h>
 #include <windows.h>
 #include <sysinfoapi.h>
 #include <versionhelpers.h>
