@@ -9,6 +9,8 @@
 #include <format>
 #include <span>
 #include <string_view>
+// ÐÞ²¹³ÌÐò
+#include "patch-runtime.h"
 // Ä£¿é
 import hostfxr;
 import error_handling;
