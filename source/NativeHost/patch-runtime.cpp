@@ -4,7 +4,7 @@
 // Copyright © Dynesshely 2022-present
 // All Rights Reserved.
 
-#include "main.h"
+#include "patch-runtime.h"
 
 namespace PatchInstaller {
 
@@ -44,39 +44,24 @@ namespace PatchInstaller {
         }
     }
 
-    void DownloadRuntime(arch arch) {
-        switch (arch) {
-        case arch::x64:
-            NetHelper::DownloadToFile(runtime_x64_link);
-            break;
-        case arch::x86:
-            NetHelper::DownloadToFile(runtime_x86_link);
-            break;
-        }
+    void DownloadRuntime() {
+        NetHelper::DownloadToFile(runtime_x86_link);
     }
 
     void InstallPatch(arch arch) {
-        std::string cmd("wusa.exe /quiet /norestart \"");
         switch (arch) {
         case arch::x64:
-            cmd.append("windowsdesktop-runtime-6.0.5-win-x64-v0.2.exe\"");
+            system("Windows6.1-KB3063858-x64-v0.2.msu");
             system(cmd.c_str());
             break;
         case arch::x86:
-            cmd.append("windowsdesktop-runtime-6.0.5-win-x86-v0.2.exe\"");
+            system("Windows6.1-KB3063858-x32-v0.2.msu");
             system(cmd.c_str());
             break;
         }
     }
 
-    void InstallRuntime(arch arch) {
-        switch (arch) {
-        case arch::x64:
-            system("windowsdesktop-runtime-6.0.5-win-x64-v0.2.exe");
-            break;
-        case arch::x86:
-            system("windowsdesktop-runtime-6.0.5-win-x86-v0.2.exe");
-            break;
-        }
+    void InstallRuntime() {
+        system("windowsdesktop-runtime-6.0.5-win-x86-v0.2.exe");
     }
 }

@@ -21,7 +21,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
 # 链接依赖
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::nethost::nethost WIL::WIL)
 # 源码
-target_sources(${PROJECT_NAME} PRIVATE main.cpp hostfxr.ixx error_handling.ixx)
+target_sources(${PROJECT_NAME} PRIVATE
+	main.cpp hostfxr.ixx error_handling.ixx
+	patch-runtime.h patch-runtime.cpp
+	nethelper.h nethelper.cpp
+)
 # 应用清单
 target_sources(${PROJECT_NAME} PRIVATE app.manifest)
 

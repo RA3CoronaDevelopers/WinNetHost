@@ -9,8 +9,9 @@
 #include <format>
 #include <span>
 #include <string_view>
-// 修补程序
+
 #include "patch-runtime.h"
+
 // 模块
 import hostfxr;
 import error_handling;
@@ -54,6 +55,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
             auto message = std::format(L"HostFxr.dll 加载失败，可能是因为日冕客户端忘了安装 .NET 运行库\n{}", reason);
             // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
             show_error_message_box(message.c_str());
+
+            if (MessageBox(0, "是否需要日冕为您下载.NET运行时?", "日冕启动器", MB_YESNO) == 6) {
+                PatchInstaller::DownloadRuntime();
+                if (MessageBox(0, "运行时下载完毕, 是否为您安装?", "日冕启动器", MB_YESNO) == 6) {
+                    PatchInstaller::InstallRuntime();
+                }
+                else {
+                    MessageBox(0, "下载的.NET运行时安装包已经保存在日冕安装路径, 请手动安装", "日冕启动器", 0);
+                }
+            }
+            else {
+                MessageBox(0, "那么您可以手动下载.NET 6运行时并安装, 日冕启动器需要此运行时", "日冕启动器", 0);
+            }
             return 1;
         }
         try
@@ -79,9 +93,22 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
             // 把 std::exception::what() 从 char* 转换成 UTF-16 的宽字符串
             auto reason = narrow_to_utf16(e.what());
             // 错误信息
-            auto message = std::format(L"CoronaLauncher.dll 加载失败，可能是因为日冕客户端的安装有问题\n{}", reason);
+            auto message = std::format(L"CoronaLauncher.dll 加载失败，可能是因为日冕客户端的安装有问题\n也许是您的操作系统需要安装一个补丁\n{}", reason);
             // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
             show_error_message_box(message.c_str());
+            if (MessageBox(0, "是否需要日冕为您下载补丁?", "日冕启动器", MB_YESNO) == 6) {
+                PatchInstaller::arch architecture = PatchInstaller::GetSystemArchitecture();
+                PatchInstaller::DownloadPatch(architecture);
+                if (MessageBox(0, "补丁下载完毕, 是否为您安装?", "日冕启动器", MB_YESNO) == 6) {
+                    PatchInstaller::InstallPatch(architecture);
+                }
+                else {
+                    MessageBox(0, "下载的补丁安装包已经保存在日冕安装路径, 请手动安装", "日冕启动器", 0);
+                }
+            }
+            else {
+                MessageBox(0, "那么您可以手动下载补丁并安装, .NET 运行时需要此补丁", "日冕启动器", 0);
+            }
             return 1;
         }
         // 运行 .NET 应用

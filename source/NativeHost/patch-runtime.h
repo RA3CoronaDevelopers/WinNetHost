@@ -17,10 +17,10 @@ typedef __int64 i64;
 
 namespace PatchInstaller {
 
-    const char* patch_x86_link = BASE_LINK "Windows6.1-KB3063858-x86-v0.2.msu";
-    const char* patch_x64_link = BASE_LINK "Windows6.1-KB3063858-x64-v0.2.msu";
-    const char* runtime_x64_link = BASE_LINK "windowsdesktop-runtime-6.0.5-win-x64-v0.2.exe";
-    const char* runtime_x86_link = BASE_LINK "windowsdesktop-runtime-6.0.5-win-x86-v0.2.exe";
+    inline const char* patch_x86_link = BASE_LINK "Windows6.1-KB3063858-x86-v0.2.msu";
+    inline const char* patch_x64_link = BASE_LINK "Windows6.1-KB3063858-x64-v0.2.msu";
+    inline const char* runtime_x64_link = BASE_LINK "windowsdesktop-runtime-6.0.5-win-x64-v0.2.exe";
+    inline const char* runtime_x86_link = BASE_LINK "windowsdesktop-runtime-6.0.5-win-x86-v0.2.exe";
 
     enum arch {
         x86 = 0, x64 = 1
@@ -32,11 +32,11 @@ namespace PatchInstaller {
 
     void DownloadPatch(arch arch);
 
-    void DownloadRuntime(arch arch);
+    void DownloadRuntime();
 
     void InstallPatch(arch arch);
 
-    void InstallRuntime(arch arch);
+    void InstallRuntime();
 }
 
 
