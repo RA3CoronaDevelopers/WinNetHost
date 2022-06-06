@@ -1,9 +1,9 @@
-// ÏµÍ³¿â
+ï»¿// ç³»ç»Ÿåº“
 #include <Windows.h>
 #include <ShellApi.h>
 // vcpkg
 #include <wil/resource.h>
-// ±ê×¼¿â
+// æ ‡å‡†åº“
 #include <cwchar>
 #include <filesystem>
 #include <format>
@@ -12,72 +12,72 @@
 
 #include "patch-runtime.h"
 
-// Ä£¿é
+// æ¨¡å—
 import hostfxr;
 import error_handling;
 
 namespace
 {
-    // °ÑÕ­×Ö·û´®£¨8 ×Ö½Ú×Ö·û´®£¬ÀıÈç GB18030 »òÕß UTF-8£©×ª»»Îª UTF-16
-    // Ê¹ÓÃµ±Ç°»·¾³µÄÄ¬ÈÏ±àÂë×÷ÎªÕ­×Ö·û´®µÄ±àÂë
+    // æŠŠçª„å­—ç¬¦ä¸²ï¼ˆ8 å­—èŠ‚å­—ç¬¦ä¸²ï¼Œä¾‹å¦‚ GB18030 æˆ–è€… UTF-8ï¼‰è½¬æ¢ä¸º UTF-16
+    // ä½¿ç”¨å½“å‰ç¯å¢ƒçš„é»˜è®¤ç¼–ç ä½œä¸ºçª„å­—ç¬¦ä¸²çš„ç¼–ç 
     std::wstring narrow_to_utf16(char const* source);
 }
 
-// Windows µÄ Main º¯Êı
+// Windows çš„ Main å‡½æ•°
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 {
-    // µ÷ÓÃ error_handling.ixx ÀïµÄ initialize_error_handling
-    // ³õÊ¼»¯´íÎó´¦Àí£¬È»ºóÓÃ execute_protected Ö´ĞĞ´úÂë
-    // ÕâÑù³ÌĞò±ÀÀ£µÄÊ±ºòÖÁÉÙÄÜ¿´µ½¸öµ¯´°£¨
+    // è°ƒç”¨ error_handling.ixx é‡Œçš„ initialize_error_handling
+    // åˆå§‹åŒ–é”™è¯¯å¤„ç†ï¼Œç„¶åç”¨ execute_protected æ‰§è¡Œä»£ç 
+    // è¿™æ ·ç¨‹åºå´©æºƒçš„æ—¶å€™è‡³å°‘èƒ½çœ‹åˆ°ä¸ªå¼¹çª—ï¼ˆ
     initialize_error_handling();
     return execute_protected([]
     {
-        // Ê¹ÓÃ CommandLineToArgvW ·Ö¸îÃüÁîĞĞ²ÎÊı
-        // CommandLineToArgvW ·µ»ØµÄÄÚ´æĞèÒªµ÷ÓÃ LocalFree ÊÍ·Å£º
+        // ä½¿ç”¨ CommandLineToArgvW åˆ†å‰²å‘½ä»¤è¡Œå‚æ•°
+        // CommandLineToArgvW è¿”å›çš„å†…å­˜éœ€è¦è°ƒç”¨ LocalFree é‡Šæ”¾ï¼š
         // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw#remarks
-        // ¶ø wil::unique_hlocal_ptr ÕıºÃ¾ÍÊÇÒ»ÖÖÊ¹ÓÃ LocalFree À´¹ÜÀíÄÚ´æµÄÀàĞÍ£º
+        // è€Œ wil::unique_hlocal_ptr æ­£å¥½å°±æ˜¯ä¸€ç§ä½¿ç”¨ LocalFree æ¥ç®¡ç†å†…å­˜çš„ç±»å‹ï¼š
         // https://github.com/Microsoft/wil/wiki/RAII-resource-wrappers#available-unique_any-simple-memory-patterns
-        // Òò´ËÎÒÃÇ¿ÉÒÔÖ±½ÓÊ¹ÓÃËü
+        // å› æ­¤æˆ‘ä»¬å¯ä»¥ç›´æ¥ä½¿ç”¨å®ƒ
         auto argc = 0;
         wil::unique_hlocal_ptr<wchar_t*> argv;
         argv.reset(CommandLineToArgvW(GetCommandLineW(), &argc));
-        // Í¨¹ı hostfxr.ixx ÀïµÄ hostfxr_dll ¼ÓÔØ DLL£¬
-        // ¼ÓÔØ³É¹¦Ö®ºóÔÙÓÃ hostfxr_app_context ¼ÓÔØ .NET Ó¦ÓÃ
+        // é€šè¿‡ hostfxr.ixx é‡Œçš„ hostfxr_dll åŠ è½½ DLLï¼Œ
+        // åŠ è½½æˆåŠŸä¹‹åå†ç”¨ hostfxr_app_context åŠ è½½ .NET åº”ç”¨
         try
         {
             hostfxr_dll::load();
         }
         catch (std::exception const& e)
         {
-            // °Ñ std::exception::what() ´Ó char* ×ª»»³É UTF-16 µÄ¿í×Ö·û´®
+            // æŠŠ std::exception::what() ä» char* è½¬æ¢æˆ UTF-16 çš„å®½å­—ç¬¦ä¸²
             auto reason = narrow_to_utf16(e.what());
-            // ´íÎóĞÅÏ¢
-            auto message = std::format(L"HostFxr.dll ¼ÓÔØÊ§°Ü£¬¿ÉÄÜÊÇÒòÎªÈÕÃá¿Í»§¶ËÍüÁË°²×° .NET ÔËĞĞ¿â\n{}", reason);
-            // µ÷ÓÃ error_handling.ixx ÀïµÄµ¯´°º¯ÊıÏÔÊ¾Ò»¸ö¼òÂªµÄµ¯´°
+            // é”™è¯¯ä¿¡æ¯
+            auto message = std::format(L"HostFxr.dll åŠ è½½å¤±è´¥ï¼Œå¯èƒ½æ˜¯å› ä¸ºæ—¥å†•å®¢æˆ·ç«¯å¿˜äº†å®‰è£… .NET è¿è¡Œåº“\n{}", reason);
+            // è°ƒç”¨ error_handling.ixx é‡Œçš„å¼¹çª—å‡½æ•°æ˜¾ç¤ºä¸€ä¸ªç®€é™‹çš„å¼¹çª—
             show_error_message_box(message.c_str());
 
-            if (MessageBox(0, "ÊÇ·ñĞèÒªÈÕÃáÎªÄúÏÂÔØ.NETÔËĞĞÊ±?", "ÈÕÃáÆô¶¯Æ÷", MB_YESNO) == 6) {
+            if (MessageBox(0, "æ˜¯å¦éœ€è¦æ—¥å†•ä¸ºæ‚¨ä¸‹è½½.NETè¿è¡Œæ—¶?", "æ—¥å†•å¯åŠ¨å™¨", MB_YESNO) == 6) {
                 PatchInstaller::DownloadRuntime();
-                if (MessageBox(0, "ÔËĞĞÊ±ÏÂÔØÍê±Ï, ÊÇ·ñÎªÄú°²×°?", "ÈÕÃáÆô¶¯Æ÷", MB_YESNO) == 6) {
+                if (MessageBox(0, "è¿è¡Œæ—¶ä¸‹è½½å®Œæ¯•, æ˜¯å¦ä¸ºæ‚¨å®‰è£…?", "æ—¥å†•å¯åŠ¨å™¨", MB_YESNO) == 6) {
                     PatchInstaller::InstallRuntime();
                 }
                 else {
-                    MessageBox(0, "ÏÂÔØµÄ.NETÔËĞĞÊ±°²×°°üÒÑ¾­±£´æÔÚÈÕÃá°²×°Â·¾¶, ÇëÊÖ¶¯°²×°", "ÈÕÃáÆô¶¯Æ÷", 0);
+                    MessageBox(0, "ä¸‹è½½çš„.NETè¿è¡Œæ—¶å®‰è£…åŒ…å·²ç»ä¿å­˜åœ¨æ—¥å†•å®‰è£…è·¯å¾„, è¯·æ‰‹åŠ¨å®‰è£…", "æ—¥å†•å¯åŠ¨å™¨", 0);
                 }
             }
             else {
-                MessageBox(0, "ÄÇÃ´Äú¿ÉÒÔÊÖ¶¯ÏÂÔØ.NET 6ÔËĞĞÊ±²¢°²×°, ÈÕÃáÆô¶¯Æ÷ĞèÒª´ËÔËĞĞÊ±", "ÈÕÃáÆô¶¯Æ÷", 0);
+                MessageBox(0, "é‚£ä¹ˆæ‚¨å¯ä»¥æ‰‹åŠ¨ä¸‹è½½.NET 6è¿è¡Œæ—¶å¹¶å®‰è£…, æ—¥å†•å¯åŠ¨å™¨éœ€è¦æ­¤è¿è¡Œæ—¶", "æ—¥å†•å¯åŠ¨å™¨", 0);
             }
             return 1;
         }
         try
         {
-            // ÕâÀïµÄ std::span ºÍ C# µÄ Span ²î²»¶àÊÇÒ»»ØÊÂ
-            // ×ÜÖ®£¬ÕâÀïÓÃ span ´«µİ²ÎÊı¡¢Æô¶¯ .NET Ó¦ÓÃ
+            // è¿™é‡Œçš„ std::span å’Œ C# çš„ Span å·®ä¸å¤šæ˜¯ä¸€å›äº‹
+            // æ€»ä¹‹ï¼Œè¿™é‡Œç”¨ span ä¼ é€’å‚æ•°ã€å¯åŠ¨ .NET åº”ç”¨
             std::span arguments{ argv.get(), static_cast<std::size_t>(argc) };
-            // TODO: ÕâÀïµÄĞ´ CoronaLauncher.dll ÊÇÏà¶ÔÓÚ¡¾µ±Ç°Â·¾¶¡¿µÄ
-            // µ«ÊÇµ±Ç°Â·¾¶ÆäÊµ²»Ò»¶¨¾ÍÊÇ±¾ EXE Ëù´¦µÄÂ·¾¶
-            // ¼ÙÈçÒª¸ü¼Ó¿É¿¿µÄ»°£¬¿ÉÒÔÕâÑù£º
+            // TODO: è¿™é‡Œçš„å†™ CoronaLauncher.dll æ˜¯ç›¸å¯¹äºã€å½“å‰è·¯å¾„ã€‘çš„
+            // ä½†æ˜¯å½“å‰è·¯å¾„å…¶å®ä¸ä¸€å®šå°±æ˜¯æœ¬ EXE æ‰€å¤„çš„è·¯å¾„
+            // å‡å¦‚è¦æ›´åŠ å¯é çš„è¯ï¼Œå¯ä»¥è¿™æ ·ï¼š
             // #include <wil/stl.h>
             // #include <wil/win32_helpers.h>
             // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew
@@ -85,61 +85,61 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
             // auto this_exe = wil::QueryFullProcessImageNameW<std::wstring>();
             // std::filesystem::path result{ this_exe };
             // result.replace_filename("bin/CoronaLauncher.dll")
-            // È»ºó°Ñ result ×÷Îª²ÎÊı´«µ½ hostfxr_app_context::load() ÀïÃæ
+            // ç„¶åæŠŠ result ä½œä¸ºå‚æ•°ä¼ åˆ° hostfxr_app_context::load() é‡Œé¢
             hostfxr_app_context::load(arguments, "CoronaLauncher.dll");
         }
         catch (std::exception const& e)
         {
-            // °Ñ std::exception::what() ´Ó char* ×ª»»³É UTF-16 µÄ¿í×Ö·û´®
+            // æŠŠ std::exception::what() ä» char* è½¬æ¢æˆ UTF-16 çš„å®½å­—ç¬¦ä¸²
             auto reason = narrow_to_utf16(e.what());
-            // ´íÎóĞÅÏ¢
-            auto message = std::format(L"CoronaLauncher.dll ¼ÓÔØÊ§°Ü£¬¿ÉÄÜÊÇÒòÎªÈÕÃá¿Í»§¶ËµÄ°²×°ÓĞÎÊÌâ\nÒ²ĞíÊÇÄúµÄ²Ù×÷ÏµÍ³ĞèÒª°²×°Ò»¸ö²¹¶¡\n{}", reason);
-            // µ÷ÓÃ error_handling.ixx ÀïµÄµ¯´°º¯ÊıÏÔÊ¾Ò»¸ö¼òÂªµÄµ¯´°
+            // é”™è¯¯ä¿¡æ¯
+            auto message = std::format(L"CoronaLauncher.dll åŠ è½½å¤±è´¥ï¼Œå¯èƒ½æ˜¯å› ä¸ºæ—¥å†•å®¢æˆ·ç«¯çš„å®‰è£…æœ‰é—®é¢˜\nä¹Ÿè®¸æ˜¯æ‚¨çš„æ“ä½œç³»ç»Ÿéœ€è¦å®‰è£…ä¸€ä¸ªè¡¥ä¸\n{}", reason);
+            // è°ƒç”¨ error_handling.ixx é‡Œçš„å¼¹çª—å‡½æ•°æ˜¾ç¤ºä¸€ä¸ªç®€é™‹çš„å¼¹çª—
             show_error_message_box(message.c_str());
-            if (MessageBox(0, "ÊÇ·ñĞèÒªÈÕÃáÎªÄúÏÂÔØ²¹¶¡?", "ÈÕÃáÆô¶¯Æ÷", MB_YESNO) == 6) {
+            if (MessageBox(0, "æ˜¯å¦éœ€è¦æ—¥å†•ä¸ºæ‚¨ä¸‹è½½è¡¥ä¸?", "æ—¥å†•å¯åŠ¨å™¨", MB_YESNO) == 6) {
                 PatchInstaller::arch architecture = PatchInstaller::GetSystemArchitecture();
                 PatchInstaller::DownloadPatch(architecture);
-                if (MessageBox(0, "²¹¶¡ÏÂÔØÍê±Ï, ÊÇ·ñÎªÄú°²×°?", "ÈÕÃáÆô¶¯Æ÷", MB_YESNO) == 6) {
+                if (MessageBox(0, "è¡¥ä¸ä¸‹è½½å®Œæ¯•, æ˜¯å¦ä¸ºæ‚¨å®‰è£…?", "æ—¥å†•å¯åŠ¨å™¨", MB_YESNO) == 6) {
                     PatchInstaller::InstallPatch(architecture);
                 }
                 else {
-                    MessageBox(0, "ÏÂÔØµÄ²¹¶¡°²×°°üÒÑ¾­±£´æÔÚÈÕÃá°²×°Â·¾¶, ÇëÊÖ¶¯°²×°", "ÈÕÃáÆô¶¯Æ÷", 0);
+                    MessageBox(0, "ä¸‹è½½çš„è¡¥ä¸å®‰è£…åŒ…å·²ç»ä¿å­˜åœ¨æ—¥å†•å®‰è£…è·¯å¾„, è¯·æ‰‹åŠ¨å®‰è£…", "æ—¥å†•å¯åŠ¨å™¨", 0);
                 }
             }
             else {
-                MessageBox(0, "ÄÇÃ´Äú¿ÉÒÔÊÖ¶¯ÏÂÔØ²¹¶¡²¢°²×°, .NET ÔËĞĞÊ±ĞèÒª´Ë²¹¶¡", "ÈÕÃáÆô¶¯Æ÷", 0);
+                MessageBox(0, "é‚£ä¹ˆæ‚¨å¯ä»¥æ‰‹åŠ¨ä¸‹è½½è¡¥ä¸å¹¶å®‰è£…, .NET è¿è¡Œæ—¶éœ€è¦æ­¤è¡¥ä¸", "æ—¥å†•å¯åŠ¨å™¨", 0);
             }
             return 1;
         }
-        // ÔËĞĞ .NET Ó¦ÓÃ
-        // ÆäÊµ£¬hostfxr_app_context::load() Ò²»á·µ»Ø×ÔÉíµÄÒıÓÃ
-        // Ò²¾ÍÊÇÆäÊµ¿ÉÒÔÕâÑù£º
+        // è¿è¡Œ .NET åº”ç”¨
+        // å…¶å®ï¼Œhostfxr_app_context::load() ä¹Ÿä¼šè¿”å›è‡ªèº«çš„å¼•ç”¨
+        // ä¹Ÿå°±æ˜¯å…¶å®å¯ä»¥è¿™æ ·ï¼š
         // hostfxr_app_context::load(...).run();
-        // ²»¹ı£¬·Ö¿ªÀ´µÄ»°£¬¿ÉÒÔĞ´¸ü¼ÓÏ¸·ÖµÄ try / catch
-        // Ò²¸ü¼ÓÈİÒ×´¦Àí¿ÉÄÜ³öÏÖµÄ±¨´í£¨
+        // ä¸è¿‡ï¼Œåˆ†å¼€æ¥çš„è¯ï¼Œå¯ä»¥å†™æ›´åŠ ç»†åˆ†çš„ try / catch
+        // ä¹Ÿæ›´åŠ å®¹æ˜“å¤„ç†å¯èƒ½å‡ºç°çš„æŠ¥é”™ï¼ˆ
         return hostfxr_app_context::get().run();
     });
 }
 
 namespace
 {
-    // °ÑÕ­×Ö·û´®£¨8 ×Ö½Ú×Ö·û´®£¬ÀıÈç GB18030 »òÕß UTF-8£©×ª»»Îª UTF-16
-    // Ê¹ÓÃµ±Ç°»·¾³µÄÄ¬ÈÏ±àÂë×÷ÎªÕ­×Ö·û´®µÄ±àÂë
+    // æŠŠçª„å­—ç¬¦ä¸²ï¼ˆ8 å­—èŠ‚å­—ç¬¦ä¸²ï¼Œä¾‹å¦‚ GB18030 æˆ–è€… UTF-8ï¼‰è½¬æ¢ä¸º UTF-16
+    // ä½¿ç”¨å½“å‰ç¯å¢ƒçš„é»˜è®¤ç¼–ç ä½œä¸ºçª„å­—ç¬¦ä¸²çš„ç¼–ç 
     std::wstring narrow_to_utf16(char const* source)
     {
         std::wstring result;
-        // Ê¹ÓÃ std::mbsrtowcs ½øĞĞ±àÂë×ª»»£º
+        // ä½¿ç”¨ std::mbsrtowcs è¿›è¡Œç¼–ç è½¬æ¢ï¼š
         // https://en.cppreference.com/w/cpp/string/multibyte/mbsrtowcs
         std::mbstate_t state{};
-        // µÚÒ»´Îµ÷ÓÃ£¬ÏÈ²»Ö´ĞĞÕæÕıµÄ×ª»»£¬¶øÊÇ´«Èë null£¬
-        // ÈÃ std::mbsrtowcs ¼ÆËãĞèÒªµÄ×Ö·û´®³¤¶È
+        // ç¬¬ä¸€æ¬¡è°ƒç”¨ï¼Œå…ˆä¸æ‰§è¡ŒçœŸæ­£çš„è½¬æ¢ï¼Œè€Œæ˜¯ä¼ å…¥ nullï¼Œ
+        // è®© std::mbsrtowcs è®¡ç®—éœ€è¦çš„å­—ç¬¦ä¸²é•¿åº¦
         auto length = std::mbsrtowcs(nullptr, &source, 0, &state);
         if (length == static_cast<std::size_t>(-1))
         {
             return L"<narrow_to_utf16() failed>";
         }
         result.resize(length);
-        // ½øĞĞÕæÕıµÄ×ª»»
+        // è¿›è¡ŒçœŸæ­£çš„è½¬æ¢
         std::mbsrtowcs(result.data(), &source, result.size(), &state);
         return result;
     }
