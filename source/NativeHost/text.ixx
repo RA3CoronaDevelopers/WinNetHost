@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cwchar>
 #include <format>
+#include <optional>
 #include <ranges>
 #include <regex>
 #include <string>
@@ -29,6 +30,8 @@ export namespace text
     std::wstring narrow_to_utf16(std::string_view source);
     // 把字符串里的所有 \n 换行符都替换成适合 Windows 界面的 \r\n
     std::wstring to_crlf(std::wstring const& source);
+    // 尝试从字符串起始的部分的分割一行出来
+    std::optional<std::string_view> try_split_one_line(std::string_view& s);
 }
 
 namespace // 供模块内部使用的代码
@@ -126,4 +129,23 @@ std::wstring text::to_crlf(std::wstring const& source)
     // 假如本来就是 \r\n，则应该保持不变
     std::wregex new_line_regex{ L"\\r?\\n" };
     return std::regex_replace(source, new_line_regex, L"\r\n");
+}
+
+// 尝试从字符串起始的部分的分割一行出来
+std::optional<std::string_view> text::try_split_one_line(std::string_view& s)
+{
+    // 尝试找到一个换行符
+    auto new_line_position = s.find('\n');
+    if (new_line_position == std::string_view::npos)
+    {
+        // 没找到换行符
+        return std::nullopt;
+    }
+    // 找到了换行符
+    // 分割出一行
+    auto line = s.substr(0, new_line_position);
+    // 去掉已经读取的部分
+    s.remove_prefix(new_line_position + 1);
+    // 返回一行
+    return line;
 }
