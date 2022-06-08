@@ -9,6 +9,7 @@ module;
 #include <regex>
 #include <string>
 export module error_handling;
+import text;
 
 export // 本模块导出的函数
 {
@@ -41,17 +42,14 @@ export // 本模块导出的函数
         return result;
     }
 }
+
+module:private;
+
 namespace // 供内部使用的函数
 {
     // 用来在在程序崩溃的时候，根据 wil 的错误信息，显示报错弹窗
     void show_fatal_error_message_box(wil::FailureInfo const& info) noexcept;
-}
 
-module:private;
-// 函数实现
-
-namespace
-{
     // 假如 C++ 遇到了无法处理的情况，std::terminate 就会被调用、并终止程序的运行
     // 但是，在这里我们也可以设置自定义的回调，std::terminate 就会调用我们的函数。
     // https://en.cppreference.com/w/cpp/error/set_terminate
@@ -106,11 +104,7 @@ void show_error_message_box(wchar_t const* message) noexcept
     {
         // Windows 的 MessageBox 要使用 \r\n 作为换行符
         // 所以，尝试把所有的 \n 都替换成 \r\n
-        std::wregex new_line_regex{ L"(\\r?)\\n" };
-        buffer = std::regex_replace(message, new_line_regex, L"\r\n");
-        // 假如成功替换了所有的换行符，就让指针指向 buffer 里新的字符串
-        // 由于后面的 MessageBox 和 buffer 处在同一个作用域里，
-        // 所以不会有生命周期的问题
+        buffer = text::to_crlf(message);
         message = buffer.c_str();
     }
     // 假如替换换行符的时候发生了异常，那也就算了，把异常忽略掉假装无事发生（

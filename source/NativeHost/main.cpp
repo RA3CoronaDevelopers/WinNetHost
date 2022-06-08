@@ -15,13 +15,7 @@
 // 模块
 import hostfxr;
 import error_handling;
-
-namespace
-{
-    // 把窄字符串（8 字节字符串，例如 GB18030 或者 UTF-8）转换为 UTF-16
-    // 使用当前环境的默认编码作为窄字符串的编码
-    std::wstring narrow_to_utf16(char const* source);
-}
+import text;
 
 // Windows 的 Main 函数
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
@@ -49,10 +43,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         }
         catch (std::exception const& e)
         {
-            // 把 std::exception::what() 从 char* 转换成 UTF-16 的宽字符串
-            auto reason = narrow_to_utf16(e.what());
             // 错误信息
-            auto message = std::format(L"HostFxr.dll 加载失败，可能是因为日冕客户端忘了安装 .NET 运行库\n{}", reason);
+            auto message = text::format(L"HostFxr.dll 加载失败，可能是因为日冕客户端忘了安装 .NET 运行库\n{}", e.what());
             // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
             show_error_message_box(message.c_str());
 
@@ -90,10 +82,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         }
         catch (std::exception const& e)
         {
-            // 把 std::exception::what() 从 char* 转换成 UTF-16 的宽字符串
-            auto reason = narrow_to_utf16(e.what());
             // 错误信息
-            auto message = std::format(L"CoronaLauncher.dll 加载失败，可能是因为日冕客户端的安装有问题\n也许是您的操作系统需要安装一个补丁\n{}", reason);
+            auto message = text::format(L"CoronaLauncher.dll 加载失败，可能是因为日冕客户端的安装有问题\n也许是您的操作系统需要安装一个补丁\n{}", e.what());
             // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
             show_error_message_box(message.c_str());
             if (MessageBox(0, "是否需要日冕为您下载补丁?", "日冕启动器", MB_YESNO) == 6) {
@@ -119,28 +109,4 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         // 也更加容易处理可能出现的报错（
         return hostfxr_app_context::get().run();
     });
-}
-
-namespace
-{
-    // 把窄字符串（8 字节字符串，例如 GB18030 或者 UTF-8）转换为 UTF-16
-    // 使用当前环境的默认编码作为窄字符串的编码
-    std::wstring narrow_to_utf16(char const* source)
-    {
-        std::wstring result;
-        // 使用 std::mbsrtowcs 进行编码转换：
-        // https://en.cppreference.com/w/cpp/string/multibyte/mbsrtowcs
-        std::mbstate_t state{};
-        // 第一次调用，先不执行真正的转换，而是传入 null，
-        // 让 std::mbsrtowcs 计算需要的字符串长度
-        auto length = std::mbsrtowcs(nullptr, &source, 0, &state);
-        if (length == static_cast<std::size_t>(-1))
-        {
-            return L"<narrow_to_utf16() failed>";
-        }
-        result.resize(length);
-        // 进行真正的转换
-        std::mbsrtowcs(result.data(), &source, result.size(), &state);
-        return result;
-    }
 }
