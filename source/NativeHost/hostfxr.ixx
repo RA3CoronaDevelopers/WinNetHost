@@ -322,9 +322,9 @@ hostfxr_dll::hostfxr_dll()
     // 毕竟大小为 0 的缓冲区绝对不可能放得下路径（
     // 使用 wil 的 FAIL_FAST_IF 来进行断言：
     // https://github.com/microsoft/wil/wiki/Error-handling-helpers#error-handling-techniques
-    
+
     //FAIL_FAST_IF(get_hostfxr_path(buffer.data(), &size, nullptr) != 0x80008098);
-    
+
     int result = get_hostfxr_path(buffer.data(), &size, nullptr);
     if (result != 0x80008098)
     {

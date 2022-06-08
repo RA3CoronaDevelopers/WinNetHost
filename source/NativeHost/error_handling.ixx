@@ -101,7 +101,7 @@ void show_error_message_box(wchar_t const* message) noexcept
     // 从 C++20 开始 string 的默认构造函数同样也是 noexcept
     // 也就是，声明一个空的 string 必定不会触发异常
     // https://en.cppreference.com/w/cpp/string/basic_string/basic_string
-    std::wstring buffer; 
+    std::wstring buffer;
     try
     {
         // Windows 的 MessageBox 要使用 \r\n 作为换行符
