@@ -1,0 +1,74 @@
+// Microsoft Visual C++ generated resource script.
+//
+#pragma code_page(65001)
+
+#include "resource.h"
+#include "winres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(简体，中国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+
+#define TEXT_OK  "确定"
+#define TEXT_YES "是"
+#define TEXT_NO  "否"
+#define TEXT_DOWNLOAD_NET \
+"正在下载 .NET 6.0.5。您也可以<A HREF=""\
+https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-desktop-6.0.5-windows-x86-installer\
+"">手动下载</A>"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 对话框
+//
+// 参考链接：
+// https://docs.microsoft.com/en-us/windows/win32/menurc/dialogex-resource
+// https://docs.microsoft.com/en-us/windows/win32/menurc/control-control
+// https://docs.microsoft.com/en-us/windows/win32/menurc/defpushbutton-control
+// https://docs.microsoft.com/en-us/windows/win32/menurc/pushbutton-control
+
+// 普通的只有 OK 按钮的弹窗，它和 MessageBox() 非常类似，不过，它的文本支持超链接哦
+IDD_INFORMATION_OK DIALOGEX 0, 0, 400, 160
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+BEGIN
+    // ID 为 IDC_MESSAGE、默认内容为 TEXT_OK 的 SysLink 控件
+    // 用来显示能够包含超链接的正文
+    CONTROL         TEXT_OK, IDC_MESSAGE, "SysLink", 0, 8, 8, 384, 104, WS_EX_TRANSPARENT
+    // 默认按钮，ID 为 IDOK，默认内容为 TEXT_OK
+    DEFPUSHBUTTON   TEXT_OK, IDOK, 272, 136, 56, 16
+END
+
+// 和上面的弹窗类似，不过这个弹窗由 YES 和 NO 两个按钮
+IDD_INFORMATION_YESNO DIALOGEX 0, 0, 400, 160
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+BEGIN
+    // 用来显示能够包含超链接的正文
+    CONTROL         TEXT_YES, IDC_MESSAGE, "SysLink", 0, 8, 8, 384, 104, WS_EX_TRANSPARENT
+    // 默认按钮
+    DEFPUSHBUTTON   TEXT_YES, IDYES, 272, 136, 56, 16
+    // 另外一个按钮
+    PUSHBUTTON      TEXT_NO, IDNO, 336, 136, 56, 16
+END
+
+// 能够显示下载进度的弹窗
+IDD_DOWNLOAD_DIALOG DIALOGEX 0, 0, 400, 160
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+BEGIN
+    // 用来显示能够包含超链接的正文
+    CONTROL         TEXT_DOWNLOAD_NET, IDC_DOWNLOAD_DIALOG_CONTENT, "SysLink", 0, 8, 8, 384, 104, WS_EX_TRANSPARENT
+    // 被放在左下角，大概可以用来显示下载速度啥的
+    CONTROL         TEXT_DOWNLOAD_NET, IDC_DOWNLOAD_STATUS_TEXT, "SysLink", 0, 8, 136, 156, 16, WS_EX_TRANSPARENT
+    // 进度条
+    CONTROL         "", IDC_DOWNLOAD_PROGRESS, "msctls_progress32", WS_BORDER, 8, 112, 384, 16
+    // 按钮
+    DEFPUSHBUTTON   "确定", IDOK, 272, 136, 56, 16
+    PUSHBUTTON      "取消", IDCANCEL, 336, 136, 56, 16
+END
+
+#endif    // 中文(简体，中国) resources
+/////////////////////////////////////////////////////////////////////////////

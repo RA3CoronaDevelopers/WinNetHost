@@ -19,13 +19,17 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 # 定义宏 - 定义 WIN32_LEAN_AND_MEAN 可以去除掉 Windows.h 里各种不必要的内容
 target_compile_definitions(${PROJECT_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
 # 链接依赖
+target_link_libraries(${PROJECT_NAME} PRIVATE Comctl32.lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::nethost::nethost WIL::WIL)
 # 源码
 target_sources(${PROJECT_NAME} PRIVATE
-	main.cpp hostfxr.ixx error_handling.ixx
-	patch-runtime.h patch-runtime.cpp
-	nethelper.h nethelper.cpp
+    main.cpp gui.ixx hostfxr.ixx error_handling.ixx
+    process.ixx safe_load_dll_feature.ixx shell.ixx text.ixx
+    patch-runtime.h patch-runtime.cpp
+    nethelper.h nethelper.cpp
 )
+# 资源文件
+target_sources(${PROJECT_NAME} PRIVATE resource.h gui.rc)
 # 应用清单
 target_sources(${PROJECT_NAME} PRIVATE app.manifest)
 
