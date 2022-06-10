@@ -1,11 +1,13 @@
 ﻿module;
 #include <Windows.h>
-#include <shlwapi.h>
+#include <shellapi.h>
 #include <shlobj.h>
+#include <shlwapi.h>
 #include <wil/com.h>
 #include <wil/resource.h>
 #include <wil/result_macros.h>
 #include <future>
+#include <optional>
 #include <string>
 export module shell;
 
@@ -18,6 +20,13 @@ export namespace shell
     // 所以我们这边不使用 ShellExecute() 函数，而是获取 Windows 资源管理器的对象
     // Windows 资源管理器一般只会有用户权限，让替我们打开我们想要打开的文件或网站
     void open(std::wstring const& command);
+    // 以管理员模式执行命令，除了无效命令等原因之外，
+    // 假如用户拒绝以管理员模式执行，也将会抛出异常
+    void run_as_administrator
+    (
+        std::wstring const& command,
+        std::optional<std::wstring> arguments = std::nullopt
+    );
 }
 
 module:private;
@@ -67,6 +76,26 @@ void shell::open(std::wstring const& command)
     CloseHandle(thread_handle);
     // 等待线程结束，或者接收异常
     thread_result.get();
+}
+
+void shell::run_as_administrator
+(
+    std::wstring const& command,
+    std::optional<std::wstring> arguments
+)
+{
+    // 调用 ShellExecute() 函数执行命令：
+    // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shellexecutew
+    auto result = ShellExecuteW
+    (
+        nullptr,
+        L"runas",
+        command.c_str(),
+        arguments.has_value() ? arguments->c_str() : nullptr,
+        nullptr,
+        SW_SHOW
+    );
+    THROW_LAST_ERROR_IF_MSG(reinterpret_cast<std::intptr_t>(result) <= 32, "failed to run as administrator with ShellExecuteW");
 }
 
 namespace
