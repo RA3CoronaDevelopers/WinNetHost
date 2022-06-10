@@ -2,10 +2,12 @@
 #include <Windows.h>
 #include <wil/resource.h>
 #include <wil/result_macros.h>
+#include <array>
 #include <filesystem>
 #include <future>
 #include <optional>
 #include <sstream>
+#include <stop_token>
 #include <string>
 export module process;
 import text;
@@ -17,29 +19,26 @@ public:
     using line_reader = std::function<void(std::string_view)>;
     using stored_reader_pointer = line_reader (process::*); // 成员变量指针
 private:
-    wil::unique_handle m_job;
+    std::shared_ptr<wil::unique_process_information> m_process =
+        std::make_shared<wil::unique_process_information>();
     std::future<void> m_read_stdout_task;
     std::future<void> m_read_stderr_task;
     line_reader m_output_reader;
     line_reader m_error_reader;
+    wil::unique_handle m_job;
 
 public:
-    // 启动进程，它将返回一个可以用于等待进程结束的 std::future
-    std::future<void> start
-    (
-        std::filesystem::path const& path,
-        std::wstring arguments
-    );
+    // 启动进程
+    void start(std::filesystem::path const& path, std::wstring arguments);
     // 设置函数，它将从另外一个线程逐行读取进程的标准输出
     void set_stdout_line_reader(line_reader reader);
     // 设置函数，它将从另外一个线程逐行读取进程的标准错误输出
     void set_stderr_line_reader(line_reader reader);
-private:
     // 创建一个等待进程结束的异步任务
-    static std::future<void> wait_for_process_exit
-    (
-        wil::unique_process_information process_information
-    );
+    // 使用 std::stop_source::get_token() 可以获取一个 stop_token，
+    // 它可以用来提前中止等待
+    std::future<void> wait_for_exit(std::stop_token stop_token) const;
+private:
     // 创建一个逐行读取进程输出的异步任务
     std::future<void> start_read_process_output
     (
@@ -52,29 +51,23 @@ module:private;
 
 namespace
 {
+    // 创建一个能确保子进程被自动终止的 Job 对象
+    // https://docs.microsoft.com/en-us/windows/win32/procthread/job-objects#managing-job-objects
+    wil::unique_handle create_kill_process_job_object();
     struct inheritable_pipe // 可以被子进程继承的管道
     {
         wil::unique_handle read;
         wil::unique_handle write;
         inheritable_pipe(); // 创建可以被子进程继承的管道
     };
-    void make_not_inheritable(HANDLE handle); // 禁止子进程继承
+    void make_not_inheritable(HANDLE handle); // 禁止子进程继承某个句柄
 }
 
-std::future<void> process::start
-(
-    std::filesystem::path const& path,
-    std::wstring arguments
-)
+void process::start(std::filesystem::path const& path, std::wstring arguments)
 {
     FAIL_FAST_IF_MSG(m_job != nullptr, "process::start already called");
-    // 创建一个新的 Job 对象，Job 对象可以控制进程的终止
-    // 以确保之后创建的子进程不会比本进程活得更久
-    {
-        auto job = CreateJobObjectW(nullptr, nullptr);
-        THROW_LAST_ERROR_IF_NULL_MSG(job, "CreateJobObjectW failed");
-        m_job.reset(job);
-    }
+    // 创建一个新的 Job 对象，以便能够自动终止子进程
+    m_job = create_kill_process_job_object();
     // 创建能够被子进程使用的管道
     inheritable_pipe stdout_pipe;
     inheritable_pipe stderr_pipe;
@@ -100,14 +93,13 @@ std::future<void> process::start
     {
         std::wstringstream formatter;
         // std::filesystem::path 被输出到 stream 的时候，会自动加上引号
-        // 所以我们就不用操心引号和空格的问题了（
+        // 所以我们就不用操心路径里是否有空格的问题了（
         // https://en.cppreference.com/w/cpp/filesystem/path/operator_ltltgtgt
         formatter << std::filesystem::canonical(path) << L" " << arguments;
         // 更新字符串的内容
         arguments = formatter.str();
     }
     // 创建子进程
-    wil::unique_process_information process_information;
     THROW_IF_WIN32_BOOL_FALSE(CreateProcessW
     (
         path.c_str(), // 要运行的程序的路径
@@ -115,11 +107,21 @@ std::future<void> process::start
         nullptr, // 子进程的安全属性
         nullptr, // 子进程主线程的安全属性
         true, // 允许子进程继承管道
-        0, // 不需要任何特殊的进程创建标志
+        // 确保子进程一开始并不属于其他 Job 对象，
+        // 否则它将无法被加入到我们的 Job 里
+        CREATE_BREAKAWAY_FROM_JOB,
         nullptr, // 默认环境变量
         nullptr, // 默认工作目录
         &startup_information, // 启动信息
-        &process_information // 子进程的信息
+        m_process.get() // 接收子进程的信息
+    ));
+    // 把进程加到 Job 对象里，
+    // 以确保子进程会在 Job 对象摧毁时（比如父进程结束的时候）结束
+    // https://docs.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-assignprocesstojobobject
+    THROW_IF_WIN32_BOOL_FALSE(AssignProcessToJobObject
+    (
+        m_job.get(), // Job 对象
+        m_process->hProcess // 子进程的句柄
     ));
     // 开始从另一个线程读取进程的标准输出
     m_read_stdout_task = start_read_process_output
@@ -133,8 +135,6 @@ std::future<void> process::start
         std::move(stderr_pipe.read),
         &process::m_error_reader
     );
-    // 返回等待进程结束的异步任务
-    return wait_for_process_exit(std::move(process_information));
 }
 
 // 设置函数，它将从另外一个线程逐行读取进程的标准输出
@@ -154,17 +154,31 @@ void process::set_stderr_line_reader(line_reader reader)
 }
 
 // 创建一个等待进程结束的异步任务
-std::future<void> process::wait_for_process_exit
-(
-    wil::unique_process_information process_information
-)
+std::future<void> process::wait_for_exit(std::stop_token stop_token) const
 {
-    auto waiter = [p = std::move(process_information)]
+    // 只能在进程已经启动之后调用
+    FAIL_FAST_IF_MSG(m_process->hProcess == nullptr, "process::wait_for_exit called before process::start");
+    auto task = [process = m_process, stop = std::move(stop_token)]
     {
-        auto wait_process_result = WaitForSingleObject(p.hProcess, INFINITE);
-        THROW_LAST_ERROR_IF(wait_process_result != WAIT_OBJECT_0);
+        // 我们需要让等待可以被取消，所以新建一个用于取消的事件
+        wil::unique_event stop_event{ wil::EventOptions::ManualReset };
+        // 假如 stop_token 变成了取消状态，那么就触发 stop_event
+        std::stop_callback on_stop_requested
+        {
+            stop,
+            [&stop_event] { stop_event.SetEvent(); }
+        };
+        // 同时等待进程结束和 stop_event，只要有一个被触发，就退出
+        std::array<HANDLE, 2> handles{ process->hProcess, stop_event.get() };
+        THROW_LAST_ERROR_IF(WaitForMultipleObjects
+        (
+            static_cast<DWORD>(handles.size()),
+            handles.data(),
+            false,
+            INFINITE
+        ) == WAIT_FAILED);
     };
-    return std::async(std::launch::async, std::move(waiter));
+    return std::async(std::launch::async, task);
 }
 
 // 创建一个逐行读取进程输出的异步任务
@@ -253,6 +267,34 @@ std::future<void> process::start_read_process_output
 
 namespace
 {
+    // 创建一个能确保子进程被自动终止的 Job 对象
+    // https://docs.microsoft.com/en-us/windows/win32/procthread/job-objects#managing-job-objects
+    wil::unique_handle create_kill_process_job_object()
+    {
+        // 创建一个 Job 对象
+        // https://docs.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-createjobobjectw
+        wil::unique_handle job{ CreateJobObjectW(nullptr, nullptr) };
+        THROW_LAST_ERROR_IF_NULL_MSG(job, "CreateJobObjectW failed");
+        // 表明我们想要在 Job 对象被关闭的时候自动终止所有子进程
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limit
+        {
+            .BasicLimitInformation =
+            {
+                .LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            }
+        };
+        // 设置 Job 对象的限制
+        // https://docs.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-setinformationjobobject
+        THROW_IF_WIN32_BOOL_FALSE_MSG(SetInformationJobObject
+        (
+            job.get(),
+            JobObjectExtendedLimitInformation,
+            &job_limit,
+            sizeof(job_limit)
+        ), "SetInformationJobObject failed");
+        return job;
+    }
+
     inheritable_pipe::inheritable_pipe() // 创建可以被子进程继承的管道
     {
         // https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
@@ -280,7 +322,7 @@ namespace
         write.reset(write_handle);
     }
 
-    void make_not_inheritable(HANDLE handle) // 禁止子进程继承某个句柄
+    void make_not_inheritable(HANDLE handle) // 禁止子进程继承某个句柄某个句柄
     {
         // 清除 HANDLE 的可继承属性
         // https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-sethandleinformation
