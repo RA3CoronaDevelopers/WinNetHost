@@ -6,16 +6,21 @@
 // 标准库
 #include <cwchar>
 #include <filesystem>
-#include <format>
 #include <span>
 #include <string_view>
+#include <thread>
 
 #include "patch-runtime.h"
-
+#include "resource.h"
 // 模块
-import hostfxr;
 import error_handling;
+import gui;
+import hostfxr;
+import safe_load_dll_feature;
+import shell;
 import text;
+
+void test_gui();
 
 // Windows 的 Main 函数
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
@@ -26,6 +31,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
     initialize_error_handling();
     return execute_protected([]
     {
+        test_gui();
+        return 0;
         // 使用 CommandLineToArgvW 分割命令行参数
         // CommandLineToArgvW 返回的内存需要调用 LocalFree 释放：
         // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw#remarks
@@ -109,4 +116,57 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         // 也更加容易处理可能出现的报错（
         return hostfxr_app_context::get().run();
     });
+}
+
+void test_gui()
+{
+    // 显示一个弹窗
+    gui::show_information
+    (
+        nullptr,
+        text::format
+        (
+            L"KB2533623 is avaialible: {}; <A HREF=\"{}\">超链接</A>",
+            safe_load_dll_feature::is_supported(),
+            "https://tieba.baidu.com/ra3"
+        ),
+        L"标题",
+        gui::information_buttons_type::ok
+    );
+
+    // 显示一个带进度条的弹窗
+    auto initialize_window = [](gui::progress_control control)
+    {
+        // 通过 std::jthread 启动一个后台任务
+        // https://en.cppreference.com/w/cpp/thread/jthread
+        auto background_task = [control](std::stop_token stop)
+        {
+            auto i = 0;
+            while (not stop.stop_requested())
+            {
+                i = ++i % 100;
+                control.set_progress(i);
+                control.set_status_text(text::format(L"{}%", i));
+                std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
+            }
+        };
+        auto thread = std::jthread{ background_task };
+        thread.detach();
+        // 在窗口关闭的时候停止后台任务
+        auto thread_stopper = thread.get_stop_source();
+        auto on_window_close = [thread_stopper](HWND window) mutable
+        {
+            thread_stopper.request_stop();
+            // 创建一个弹窗，根据用户的选择（弹窗根据按下的按钮返回 true 或者 false）
+            // 来决定是否真的要关闭窗口
+            // 这些弹窗的 ID （IDD_INFORMATION_YESNO）可以在 resource.h 和 gui.rc 里找到
+            return gui::show_information(window, IDD_INFORMATION_YESNO);
+        };
+        control.set_close_window_handler(on_window_close);
+        // 完成初始化，开始显示弹窗
+    };
+    // 把上面的 initialize_window 作为初始化函数，
+    // 创建一个带进度条的弹窗
+    // 这些弹窗的 ID （IDD_DOWNLOAD_DIALOG）可以在 resource.h 和 gui.rc 里找到
+    gui::show_download(nullptr, IDD_DOWNLOAD_DIALOG, initialize_window);
 }
