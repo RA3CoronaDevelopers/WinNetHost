@@ -6,6 +6,8 @@
 
 #include "patch-runtime.h"
 
+import shell;
+
 namespace PatchInstaller {
 
     arch GetSystemArchitecture() {
@@ -51,12 +53,12 @@ namespace PatchInstaller {
     void InstallPatch(arch arch) {
         switch (arch) {
         case arch::x64:
-            system("Windows6.1-KB3063858-x64-v0.2.msu");
-            system(cmd.c_str());
+            //system("Windows6.1-KB3063858-x64-v0.2.msu");
+            shell::open(L"Windows6.1-KB3063858-x64-v0.2.msu");
             break;
         case arch::x86:
-            system("Windows6.1-KB3063858-x32-v0.2.msu");
-            system(cmd.c_str());
+            //system("Windows6.1-KB3063858-x32-v0.2.msu");
+            shell::open(L"Windows6.1-KB3063858-x32-v0.2.msu");
             break;
         }
     }
