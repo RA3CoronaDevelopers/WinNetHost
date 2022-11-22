@@ -25,9 +25,15 @@ export // 本模块导出的函数
     int execute_protected(F&& f)
     {
         int result = -1;
-        // 假如出现了并不是异常、无法 catch 的错误（比如说 null 指针什么的）
-        // 那么也尝试把它转换成 failfast，然后执行 wil failfast 的逻辑、
-        // 并根据我们在 initialize_error_handling 里的设置，显示弹窗
+        // 除了普通的 C++ 异常以外，还有一些其他的错误，
+        //（比如说解引用 null 指针、栈溢出这种），它们是无法被 catch 的，
+        // 但是，wil 提供的这个 FailFastException 似乎能够把这种错误
+        // 也给一起处理了，它将会在遇到错误的时候调用 failfast handler，
+        // 报告错误（这一步可以由我们自定义）并终止程序。
+        // 也就是说，可以根据我们在 initialize_error_handling 里的设置，
+        // 显示报错弹窗。
+        // TODO: 之前在 Win7 虚拟机测试的时候，
+        // 程序崩溃的时候似乎不会被终止，而是死循环，需要调查一下
         wil::FailFastException(WI_DIAGNOSTICS_INFO, [&]()
         {
             try
