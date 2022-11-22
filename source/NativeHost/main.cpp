@@ -28,6 +28,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
     // 调用 error_handling.ixx 里的 initialize_error_handling
     // 初始化错误处理，然后用 execute_protected 执行代码
     // 这样程序崩溃的时候至少能看到个弹窗（
+    // 不过，上次在 Win7 虚拟机里测试的时候，触发程序崩溃之后，似乎陷入死循环了？
+    // 也许应该多测试一下（
+    // 可以阅读 error_handling.ixx 来了解更多的信息
     initialize_error_handling();
     return execute_protected([]
     {
@@ -50,23 +53,20 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         }
         catch (std::exception const& e)
         {
-            // 错误信息
+            // TODO: 显示错误信息、提供下载 .NET Runtime 的选项
+            // 由于下载是比较复杂的任务，需要考虑各种情况以及玩家的网络状况
+            // 因此目前的计划是启动外部的程序 aria2c.exe 来进行下载。
+            // 可以使用 process.ixx 里提供的函数来启动外部程序、
+            // 解析它的 stdout 来获取下载进度
+            // 除了解析 stdout 的文本以外，也可以使用 JSON-RPC 来与 aria2 交互：
+            // https://aria2.github.io/manual/en/html/aria2c.html#rpc-interface
+            // 在下载的过程中，可以使用 gui.ixx 里提供的函数，
+            // 绘制一个带进度条的窗口，显示下载进度
+
             auto message = text::format(L"HostFxr.dll 加载失败，可能是因为日冕客户端忘了安装 .NET 运行库\n{}", e.what());
             // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
             show_error_message_box(message.c_str());
 
-            if (MessageBox(0, "是否需要日冕为您下载.NET运行时?", "日冕启动器", MB_YESNO) == 6) {
-                PatchInstaller::DownloadRuntime();
-                if (MessageBox(0, "运行时下载完毕, 是否为您安装?", "日冕启动器", MB_YESNO) == 6) {
-                    PatchInstaller::InstallRuntime();
-                }
-                else {
-                    MessageBox(0, "下载的.NET运行时安装包已经保存在日冕安装路径, 请手动安装", "日冕启动器", 0);
-                }
-            }
-            else {
-                MessageBox(0, "那么您可以手动下载.NET 6运行时并安装, 日冕启动器需要此运行时", "日冕启动器", 0);
-            }
             return 1;
         }
         try
@@ -90,27 +90,16 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         catch (std::exception const& e)
         {
             // 错误信息
+            // TODO: 实际上，加载 DLL 之前，
+            // 就事先使用 safe_load_dll_feature.ixx 里提供的函数来检查
+            // 是否需要安装补丁，可能会更好一些？
             auto message = text::format(L"CoronaLauncher.dll 加载失败，可能是因为日冕客户端的安装有问题\n也许是您的操作系统需要安装一个补丁\n{}", e.what());
-            // 调用 error_handling.ixx 里的弹窗函数显示一个简陋的弹窗
             show_error_message_box(message.c_str());
-            if (MessageBox(0, "是否需要日冕为您下载补丁?", "日冕启动器", MB_YESNO) == 6) {
-                PatchInstaller::arch architecture = PatchInstaller::GetSystemArchitecture();
-                PatchInstaller::DownloadPatch(architecture);
-                if (MessageBox(0, "补丁下载完毕, 是否为您安装?", "日冕启动器", MB_YESNO) == 6) {
-                    PatchInstaller::InstallPatch(architecture);
-                }
-                else {
-                    MessageBox(0, "下载的补丁安装包已经保存在日冕安装路径, 请手动安装", "日冕启动器", 0);
-                }
-            }
-            else {
-                MessageBox(0, "那么您可以手动下载补丁并安装, .NET 运行时需要此补丁", "日冕启动器", 0);
-            }
             return 1;
         }
         // 运行 .NET 应用
         // 其实，hostfxr_app_context::load() 也会返回自身的引用
-        // 也就是其实可以这样：
+        // 也就是其实本来可以直接这样写：
         // hostfxr_app_context::load(...).run();
         // 不过，分开来的话，可以写更加细分的 try / catch
         // 也更加容易处理可能出现的报错（
