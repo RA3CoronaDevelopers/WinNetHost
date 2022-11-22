@@ -1,0 +1,45 @@
+name: build
+
+on:
+  push:
+    branches: [ 'new-apphost' ]
+  pull_request:
+    branches: [ 'new-apphost' ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    name: Build on Windows
+    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
+    # You can convert this to a matrix build if you need cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: 'windows-latest'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get the latest version of CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Restore vcpkg artifacts, or setup vcpkg for building artifacts
+        uses: lukka/run-vcpkg@v10
+        with:
+          # Specify the full SHA-1 hash of a Git commit (not a branch name, nor a tag!) that establishes which version of vcpkg needs to be used. When using vcpkg as a Git submodule, this input is *not* needed as implicitly specified by the submodule.
+          vcpkgGitCommitId: '34d2cf7e62d781f4bcb9c7f44f4d2389f568e92b'
+
+      - name: run-cmake
+        uses: lukka/run-cmake@v10
+        with:
+          # The name of the configure preset.
+          configurePreset: 'MSVC'
+          # The name of the build preset.
+          buildPreset: 'MSVC Release'
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          # A file, directory or wildcard pattern that describes what to upload
+          path: out/
+          if-no-files-found: warn
