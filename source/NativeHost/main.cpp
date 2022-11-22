@@ -1,7 +1,7 @@
 ﻿// 系统库
 #include <Windows.h>
 #include <ShellApi.h>
-// vcpkg
+// 从 vcpkg 安装的第三方库
 #include <wil/resource.h>
 // 标准库
 #include <cwchar>
@@ -10,7 +10,6 @@
 #include <string_view>
 #include <thread>
 
-#include "patch-runtime.h"
 #include "resource.h"
 // 模块
 import error_handling;
