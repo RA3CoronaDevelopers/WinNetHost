@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.17)
+﻿cmake_minimum_required(VERSION 3.21)
 project(NativeHost)
 
 # 第三方库（见 vcpkg.json）
