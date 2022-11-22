@@ -12,6 +12,8 @@ find_package(wil CONFIG REQUIRED)
 
 # 创建一个编译到 exe 的目标
 add_executable(${PROJECT_NAME} WIN32)
+# 源码
+add_subdirectory("source/NativeHost")
 # 确保我们在使用 MultiThreaded / MultiThreadedDebug
 # 而不是 MultiThreadedDll / MultiThreadedDebugDll
 # 以避免需要依赖
@@ -28,15 +30,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     unofficial::nethost::nethost
     WIL::WIL
 )
-# 源码
-target_sources(${PROJECT_NAME} PRIVATE
-    main.cpp gui.ixx hostfxr.ixx error_handling.ixx
-    process.ixx safe_load_dll_feature.ixx shell.ixx text.ixx
-)
-# 资源文件
-target_sources(${PROJECT_NAME} PRIVATE resource.h gui.rc)
-# 应用清单
-target_sources(${PROJECT_NAME} PRIVATE app.manifest)
 
 # （暂时被禁用）在执行 CMake install 步骤的时候，把产生的 exe 复制到定义的地方
 # install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ".")
