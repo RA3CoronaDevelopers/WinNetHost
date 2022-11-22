@@ -34,9 +34,8 @@ jobs:
         with:
           # The name of the configure preset.
           configurePreset: 'msvc-release'
-          # The name of the build preset.
-          buildPreset: 'build-msvc-release'
-          buildWithCMakeArgs: '--target install'
+          # Build with MSVC release and then install.
+          buildPresetCmdString: '--build --preset build-msvc-release --target install'
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
