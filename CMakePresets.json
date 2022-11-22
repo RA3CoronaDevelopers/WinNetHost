@@ -27,7 +27,10 @@
     {
       "name": "MSVC Release",
       "configurePreset": "MSVC",
-      "configuration": "Release"
+      "configuration": "Release",
+      "cacheVariables": {
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "TRUE"
+      }
     }
   ]
 }
