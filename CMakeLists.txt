@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.17)
 project(NativeHost)
 
-# 第三方库
+# 第三方库（参见 vcpkg.json）
 # NET Host，在 C++ 程序里启动 .NET 运行时
 find_package(unofficial-nethost CONFIG REQUIRED)
 # WIL,一个方便调用 Win32 API 的库
