@@ -36,10 +36,11 @@ jobs:
           configurePreset: 'MSVC'
           # The name of the build preset.
           buildPreset: 'MSVC Release'
+          buildWithCMakeArgs: '--target install'
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           # A file, directory or wildcard pattern that describes what to upload
-          path: out/install
+          path: out/
           if-no-files-found: warn
