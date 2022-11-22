@@ -44,6 +44,11 @@
       "name": "build-msvc-release",
       "configurePreset": "msvc-release",
       "configuration": "Release"
+    },
+    {
+      "name": "publish-msvc-release",
+      "inherits": "build-msvc-release",
+      "targets": "install"
     }
   ]
 }
