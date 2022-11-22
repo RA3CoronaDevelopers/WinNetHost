@@ -1,26 +1,33 @@
 {
-    "version": 3,
-    "configurePresets": [
-        {
-            "name": "MSVC",
-            "displayName": "MSVC",
-            "generator": "Visual Studio 17 2022",
-            "architecture": "Win32",
-            "binaryDir": "../../build/net6.0-windows/CMake",
-            "installDir": "../../build/net6.0-windows",
-            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "MSVC Debug",
-            "configurePreset": "MSVC",
-            "configuration": "Debug"
-        },
-        {
-            "name": "MSVC Release",
-            "configurePreset": "MSVC",
-            "configuration": "Release"
-        }
-    ]
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "MSVC",
+      "displayName": "MSVC",
+      "generator": "Visual Studio 17 2022",
+      "architecture": {
+        "value": "Win32",
+        "strategy": "set"
+      },
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      "cacheVariables": {
+        "VCPKG_HOST_TRIPLET": "x86-windows-static",
+        "VCPKG_TARGET_TRIPLET": "x86-windows-static"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "MSVC Debug",
+      "configurePreset": "MSVC",
+      "configuration": "Debug"
+    },
+    {
+      "name": "MSVC Release",
+      "configurePreset": "MSVC",
+      "configuration": "Release"
+    }
+  ]
 }
