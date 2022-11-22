@@ -21,8 +21,6 @@ module;
 #include <source_location>
 #include <span>
 #include <vector>
-// 辅助程序
-#include "patch-runtime.h"
 export module hostfxr;
 
 // 抛出一个包含各种详细信息的异常，配合下面的 hostfxr_exception 使用
