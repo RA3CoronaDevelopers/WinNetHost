@@ -2,8 +2,9 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "MSVC",
-      "displayName": "MSVC",
+      "name": "msvc",
+      "hidden": true,
+      "description": "使用 CMake 生成 MSVC 项目时，需要用到的各种通用设置",
       "generator": "Visual Studio 17 2022",
       "architecture": {
         "value": "Win32",
@@ -16,6 +17,21 @@
         "VCPKG_HOST_TRIPLET": "x86-windows-static",
         "VCPKG_TARGET_TRIPLET": "x86-windows-static"
       }
+    },
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug",
+      "description": "使用 CMake 生成 MSVC 项目，调试模式",
+      "inherits": "msvc"
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release",
+      "description": "使用 CMake 生成 MSVC 项目，发布模式",
+      "inherits": "msvc",
+      "cacheVariables": {
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "TRUE"
+      }
     }
   ],
   "buildPresets": [
@@ -27,10 +43,7 @@
     {
       "name": "MSVC Release",
       "configurePreset": "MSVC",
-      "configuration": "Release",
-      "cacheVariables": {
-        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "TRUE"
-      }
+      "configuration": "Release"
     }
   ]
 }
