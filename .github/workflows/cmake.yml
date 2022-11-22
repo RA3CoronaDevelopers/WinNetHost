@@ -36,7 +36,7 @@ jobs:
           configurePreset: 'msvc-release'
           # Build with MSVC release and then install.
           buildPreset: 'build-msvc-release'
-          buildPresetCmdString: '--build --preset build-msvc-release --target install'
+          buildPresetCmdString: '--target install'
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
