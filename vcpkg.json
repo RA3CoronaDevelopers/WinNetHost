@@ -8,5 +8,6 @@
       "version>=": "6.0.5"
     },
     "wil"
-  ]
+  ],
+  "builtin-baseline": "34d2cf7e62d781f4bcb9c7f44f4d2389f568e92b"
 }

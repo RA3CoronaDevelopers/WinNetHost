@@ -2,8 +2,9 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "MSVC",
-      "displayName": "MSVC",
+      "name": "msvc",
+      "hidden": true,
+      "description": "使用 CMake 生成 MSVC 项目时，需要用到的各种通用设置",
       "generator": "Visual Studio 17 2022",
       "architecture": {
         "value": "Win32",
@@ -11,23 +12,43 @@
       },
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
         "VCPKG_HOST_TRIPLET": "x86-windows-static",
         "VCPKG_TARGET_TRIPLET": "x86-windows-static"
+      }
+    },
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug",
+      "description": "使用 CMake 生成 MSVC 项目，调试模式",
+      "inherits": "msvc"
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release",
+      "description": "使用 CMake 生成 MSVC 项目，发布模式",
+      "inherits": "msvc",
+      "cacheVariables": {
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "TRUE"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "MSVC Debug",
-      "configurePreset": "MSVC",
+      "name": "build-msvc-debug",
+      "configurePreset": "msvc-debug",
       "configuration": "Debug"
     },
     {
-      "name": "MSVC Release",
-      "configurePreset": "MSVC",
+      "name": "build-msvc-release",
+      "configurePreset": "msvc-release",
       "configuration": "Release"
+    },
+    {
+      "name": "publish-msvc-release",
+      "inherits": "build-msvc-release",
+      "targets": "install"
     }
   ]
 }
