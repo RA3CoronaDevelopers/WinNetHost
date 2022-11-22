@@ -25,8 +25,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::nethost::nethost WIL::
 target_sources(${PROJECT_NAME} PRIVATE
     main.cpp gui.ixx hostfxr.ixx error_handling.ixx
     process.ixx safe_load_dll_feature.ixx shell.ixx text.ixx
-    patch-runtime.h patch-runtime.cpp
-    nethelper.h nethelper.cpp
 )
 # 资源文件
 target_sources(${PROJECT_NAME} PRIVATE resource.h gui.rc)
