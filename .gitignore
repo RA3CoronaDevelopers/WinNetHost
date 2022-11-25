@@ -34,6 +34,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# CMake Build Results
+out/
+
 # VSCode files
 .vscode/
 

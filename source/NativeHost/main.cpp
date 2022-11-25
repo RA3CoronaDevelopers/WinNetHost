@@ -34,7 +34,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
     return execute_protected([]
     {
         test_gui();
-        return 0;
+        // return 0;
         // 使用 CommandLineToArgvW 分割命令行参数
         // CommandLineToArgvW 返回的内存需要调用 LocalFree 释放：
         // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw#remarks

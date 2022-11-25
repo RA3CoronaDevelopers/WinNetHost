@@ -33,9 +33,9 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           # The name of the configure preset.
-          configurePreset: 'msvc-release'
+          configurePreset: 'msvc-x86'
           # Build with MSVC release and then install.
-          buildPreset: 'publish-msvc-release'
+          buildPreset: 'msvc-x86-publish'
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
